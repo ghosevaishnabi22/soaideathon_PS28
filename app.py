@@ -650,7 +650,27 @@ def departmentdetails(id):
     sections = Section.query.filter_by(department_id=dean.department_id).all()
     departments = Department.query.all()
     return render_template('departmentdetails.html', dean=dean, departments=departments, sections=sections)
-   
+
+@app.route('/adddepartment', methods=['GET', 'POST'])
+def adddepartment():
+    dean = Teacher.query.filter_by(is_dean=True).first()
+    if request.method == 'GET':
+        return render_template('adddepartment.html', dean=dean)
+
+    if request.method == 'POST':
+        dep_name = request.form.get('dep_name')
+
+        if Department.query.filter_by(name=dep_name).first():
+            flash("❌ Department already exists.")
+            return redirect('/adddepartment')
+
+        new_department = Department(name=dep_name)
+        db.session.add(new_department)
+        db.session.commit()
+
+        flash("✅ Department added successfully.")
+        return redirect(f'/departmentdetails/{dean.id}')
+ 
 
 @app.route('/addsubject/<dept_id>', methods=['GET', 'POST'])
 def addsubject(dept_id):
