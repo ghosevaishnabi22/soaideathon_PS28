@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generate Routine</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: url("/static/pic.jpeg") no-repeat center center/cover;
+            margin: 0;
+            padding: 40px 20px;
+            color: #222;
+        }
+
+        h2 {
+            color: #fff;
+            font-size: 32px;
+            margin-bottom: 25px;
+            text-shadow: 0 5px 8px rgba(0,0,0,0.6);
+            text-align: center;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+        }
+
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 16px;
+            border-radius: 6px;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        nav a:hover {
+            background: #007BFF;
+            transform: scale(1.05);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .routine-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+        }
+
+        .routine-table th, .routine-table td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .routine-table th {
+            background: #007BFF;
+            color: #fff;
+        }
+
+        .fixed-slot {
+            background: #ffc107;
+            font-weight: bold;
+        }
+
+        .free-slot {
+            background: #e9f7ef;
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .form-card {
+            background: #f8f9fa;
+            border-left: 6px solid #007BFF;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 18px;
+        }
+
+        .subject-box {
+            margin: 12px 0;
+            padding: 10px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-area {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 15px;
+            margin: 0 10px;
+            transition: transform 0.2s;
+        }
+
+        .btn-primary {
+            background: #007BFF;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0,123,255,0.4);
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: #fff;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: scale(1.05);
+        }
+        
+        /* Flash Message */
+        .flash-message {
+            background-color: #ffe6e6;
+            color: #b30000;
+            padding: 12px 20px;
+            margin: 20px auto;
+            width: 80%;
+            border-left: 5px solid #ff4d4d;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+  
+    <nav>
+        <a href="/deandashboard/{{dean.id}}">🏠 Home</a>
+        <a href="/departmentdetails/{{dean.id}}">🏫 Department</a>
+        <a href="/">👩‍🏫 Faculty</a>
+        <a href="/routine/{{dean.id}}">📅 Routines</a>
+        <a href="/message/{{dean.id}}">✉ Messages</a>
+        <a href="/">📊 Summary</a>
+        <a href="/">⚙ Edit Profile</a>
+        <a href="/logout">🚪 Logout</a>
+    </nav>
+
+    
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-message">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="container">
+        <h2>📅 Generate Routine for Section: {{ section.name }}</h2>
+
+        <!-- Fixed routine preview -->
+        <h3>🛠 Fixed Subjects & Free Slots</h3>
+        <table class="routine-table">
+            <thead>
+                <tr>
+                    <th>Day / Period</th>
+                    {% for p in range(1, 7) %}
+                        <th>Period {{ p }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat'] %}
+                <tr>
+                    <th>{{ d }}</th>
+                    {% for p in range(1, 7) %}
+                        {% set slot = None %}
+                        {% for fs in fixed_subjects if fs.day == d and fs.period == p %}
+                            {% set slot = fs %}
+                        {% endfor %}
+                        {% if slot %}
+                            <td class="fixed-slot">{{ slot.subject.name }} <br> ({{ slot.time }})</td>
+                        {% else %}
+                            <td class="free-slot">Free (Electives)</td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Subject selection form -->
+        <form method="POST" action="{{ url_for('generate_routine', section_id=section.id) }}">
+            
+            <div class="form-card">
+                <h4>⚙ Settings</h4>
+                <label><strong>Max Classes per Batch:</strong></label>
+                <input type="number" name="max_classes_batch" value="5" min="1" max="10">
+            </div>
+
+            <div class="form-card">
+                <h4>📚 Select Subjects to Include</h4>
+                {% for subject in subjects %}
+                    {% if not subject.is_fixed %}
+                    <div class="subject-box">
+                        <input type="checkbox" name="subject_ids" value="{{ subject.id }}" id="sub{{ subject.id }}">
+                        <label for="sub{{ subject.id }}"><strong>{{ subject.name }}</strong></label>
+
+                        <label>Classes per Week:</label>
+                        <select name="classes_{{ subject.id }}">
+                            <option value="3">Normal (3 days/week)</option>
+                            <option value="6">Fixed (6 days/week)</option>
+                            <option value="2">Selective (2 days/week)</option>
+                        </select>
+                        <br>
+                        <small><em>👨‍🏫 Teacher auto-assigned by workload</em></small>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+
+            <div class="btn-area">
+                <button type="submit" class="btn btn-primary">⚡ Generate 3 Routine Options</button>
+                <a href="{{ url_for('deandashboard', id=dean.id) }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

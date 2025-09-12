@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login | ParkEase</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background: url("/static/pic.jpeg") no-repeat center center/cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Poppins', sans-serif;
+        }
+        .login-container {
+            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.15);
+            padding: 60px 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            width: 350px;
+        }
+        h2 {
+            color: #040404;
+            font-size: 28px;
+            margin-bottom: 25px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 12px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            background: rgba(255,255,255,0.2);
+            color: #1b1a1a;
+        }
+        input::placeholder {
+            color: rgba(20, 20, 20, 0.7);
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            background: rgba(0,123,255,0.8);
+            color: #fff;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .link {
+            margin-top: 15px;
+            display: block;
+            color: #5f0ae9;
+            font-size: 14px;
+            text-decoration: none;
+            opacity: 0.8;
+        }
+        .link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>🔑 Teacher Login</h2>
+             
+        <!-- Flash Messages Section -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="/tlogin">
+            <input type="email" name="email" placeholder="Enter Email" required>
+            <input type="password" name="password" placeholder="Enter Password" required 
+                pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@])[A-Za-z\d@]{8,}"
+                title="At least 8 characters, 1 uppercase, 1 lowercase, 1 number, and only @ as special character">
+            <button type="submit">Login</button>
+        </form>
+        <a href="/" class="link">⬅ Back to Home</a>
+        <p style="margin-top: 10px;">
+            <a href="/tforgotpassword" style="text-decoration: none; color: #007BFF;">Forgot Password?</a>
+        </p>
+    </div>
+</body>
+</html>
+

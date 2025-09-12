@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Faculty List</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url("/static/pic.jpeg") no-repeat center center/cover;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        h2 {
+            color: #fff;
+            font-size: 34px;
+            margin-bottom: 30px;
+            text-shadow: 0 5px 5px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        /* Navigation Bar */
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        nav a {
+            color: rgb(17, 17, 17);
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 14px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        nav a:hover {
+            color: #fff;
+            background: #0056b3;
+        }
+
+        /* Flash Messages */
+        .flash-message {
+            background-color: #ffe6e6;
+            color: #b30000;
+            padding: 12px 20px;
+            margin: 20px auto;
+            width: 80%;
+            border-left: 5px solid #ff4d4d;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        /* Card */
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px auto;
+            width: 90%;
+            max-width: 1100px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .card h3 {
+            color: #007BFF;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        /* Search */
+        .search-box {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .search-box select {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            width: 250px;
+        }
+
+        .search-box button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .search-box button:hover {
+            background: #218838;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        th {
+            background: #007BFF;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        tr:hover {
+            background: #f1f1f1;
+        }
+
+        .no-data {
+            text-align: center;
+            margin-top: 20px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <h2>👩‍🏫 Faculty Members</h2>
+
+    
+    <!-- Navigation -->
+    <nav>
+        <a href="/deandashboard/{{dean.id}}">Home</a>
+        <a href="/departmentdetails/{{dean.id}}">Department</a>
+        <a href="/showfaculty/{{dean.id}}">Faculty</a>
+        <a href="/routine/{{dean.id}}"> Routines</a>
+        <a href="/message/{{dean.id}}">Messages</a>
+        <a href="/deansummary/{{ dean.id }}">Summary</a>
+        <a href="/teditprofile/{{dean.id}}">Edit Profile</a>
+        <a href="/logout">Logout</a>
+    </nav>
+
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-message">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Faculty Card -->
+    <div class="card">
+        <h3>📋 Faculty Directory</h3>
+
+        <!-- Search -->
+        <div class="search-box">
+            <form method="POST" action="/showfaculty/{{ dean.id }}">
+                <select name="department_id" required>
+                    <option value="">-- Select Department --</option>
+                    {% for dept in departments %}
+                        <option value="{{ dept.id }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Search</button>
+            </form>
+        </div>
+
+        {% if teachers %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Faculty Name</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for teacher in teachers %}
+                <tr>
+                    <td>{{ teacher.id }}</td>
+                    <td>{{ teacher.name }}</td>
+                    <td>{{ teacher.email }}</td>
+                    <td>{{ teacher.department.name if teacher.department else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-data">⚠️ No faculty found.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

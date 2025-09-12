@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Routine Options</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: url("/static/pic.jpeg") no-repeat center center/cover;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        h2 {
+            color: #fff;
+            font-size: 34px;
+            margin-bottom: 30px;
+            text-shadow: 0 5px 5px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        nav a {
+            color: rgb(17, 17, 17);
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 14px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        nav a:hover {
+            color: #fff;
+            background: #0056b3;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px auto;
+            width: 95%;
+            max-width: 1300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            font-weight: bold;
+            color: #fff;
+            background: #007BFF;
+            padding: 10px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+            word-wrap: break-word;
+        }
+
+        th {
+            background: #f8f9fa;
+        }
+
+        .lunch {
+            background: #ffe6b3;
+            font-weight: bold;
+        }
+
+        .games {
+            background: #d1e7dd;
+            font-weight: bold;
+        }
+
+        .select-routine {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .select-btn {
+            margin-top: 8px;
+            padding: 8px 14px;
+            background: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .select-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h2>📑 Routine Options for Section: {{ section.name }}</h2>
+
+    <nav>
+        <a href="/deandashboard/{{dean.id}}">Home</a>
+        <a href="/departmentdetails/{{dean.id}}">Department</a>
+        <a href="/">Faculty</a>
+        <a href="/routine/{{dean.id}}">Routines</a>
+        <a href="/message/{{dean.id}}">Messages</a>
+        <a href="/">Summary</a>
+        <a href="/">Edit Profile</a>
+        <a href="/logout">Logout</a>
+    </nav>
+
+        
+        <!-- Flash Messages Section -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+    {% set periods = [
+        '08:00-09:00','09:00-10:00','10:00-11:00','11:00-12:00','12:00-13:00',
+        '13:00-14:00 (Lunch)','14:00-15:00','15:00-16:00','16:00-17:00','18:00-19:00 (Games)'
+    ] %}
+    {% set days = ['Mon','Tue','Wed','Thu','Fri','Sat'] %}
+
+    <form method="POST" action="/save_selected_routine/{{ section.id }}">
+        {% for routine in options %}
+        <div class="card">
+            <div class="card-header">
+                Routine Option {{ routine.version }}
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Day / Time</th>
+                                {% for p in periods %}
+                                    <th>{{ p }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in days %}
+                            <tr>
+                                <th>{{ d }}</th>
+                                {% for p in range(1, periods|length + 1) %}
+                                    {% set slot = routine.slots 
+                                                    | selectattr("day", "equalto", d) 
+                                                    | selectattr("period", "equalto", p) 
+                                                    | first %}
+                                    {% if slot %}
+                                        {% if slot.period == 7 %}
+                                            <td class="lunch">🍴 Lunch Break</td>
+                                        {% elif slot.period == 10 %}
+                                            <td class="games">🏏 Games</td>
+                                        {% else %}
+                                            <td>
+                                                <strong>{{ slot.subject.name }}</strong><br>
+                                                <small>{{ slot.teacher.name }}</small>
+                                            </td>
+                                        {% endif %}
+                                    {% else %}
+                                        <td></td>
+                                    {% endif %}
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="select-routine">
+                    <input type="radio" name="selected_routine" value="{{ routine.id }}" required>
+                    <label>Select this Routine</label>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <center><button type="submit" class="select-btn">✅ Confirm Selected Routine</button></center>
+    </form>
+</body>
+</html>
