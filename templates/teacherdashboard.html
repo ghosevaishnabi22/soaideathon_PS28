@@ -49,49 +49,53 @@
       border-radius: 12px;
       padding: 24px;
       margin: 20px auto;
-      width: 85%;
-      max-width: 1000px;
+      width: 95%;
+      max-width: 1200px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
     .card h3 {
       margin-bottom: 16px;
       color: #007BFF;
+      text-align: center;
     }
 
-    .slot {
+    .routine-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .routine-table th, .routine-table td {
+      border: 1px solid #ccc;
       padding: 10px;
-      border-radius: 8px;
-      margin: 8px 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      text-align: center;
+      vertical-align: middle;
     }
 
-    /* Normal Slot */
-    .slot strong {
-      color: #333;
+    .routine-table th {
+      background: #007BFF;
+      color: #fff;
     }
 
-    /* Highlighted Slots */
     .slot.absent {
-      background: #ffe6e6; /* light red */
-      border-left: 5px solid #e74c3c;
+      background: #ffe6e6;
+      border-left: 4px solid #e74c3c;
     }
 
-    .slot.added {
-      background: #e6ffed; /* light green */
-      border-left: 5px solid #28a745;
+    .slot.normal {
+      background: #f9f9f9;
     }
 
     button.danger {
-      padding: 6px 12px;
+      padding: 6px 10px;
       border: none;
       border-radius: 6px;
       cursor: pointer;
       font-weight: bold;
       background: #e74c3c;
       color: #fff;
+      margin-top: 5px;
     }
 
     button.danger:hover {
@@ -117,16 +121,17 @@
   <a href="/teditprofile/{{ teacher.id }}">Edit Profile</a>
   <a href="/logout">Logout</a>
 </nav>
-<!-- Flash Messages Section -->
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
-                    {% for message in messages %}
-                        <p>{{ message }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
+      {% for message in messages %}
+        <p>{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
 <!-- Accepted Routine -->
 <div class="card">
@@ -134,24 +139,42 @@
   {% set accepted = routines | selectattr("finalized", "equalto", True) | sort(attribute="version") | list %}
   {% if accepted %}
     {% set latest = accepted[-1] %}
-    <p><strong>Routine Version {{ latest.version }}</strong> (Accepted ✅)</p>
+    <p style="text-align:center;"><strong>Routine Version {{ latest.version }}</strong> (Accepted ✅)</p>
 
-    {% for slot in slots if slot.routine_id==latest.id %}
-      <div class="slot {% if slot.absent %}absent{% elif slot.added %}added{% endif %}">
-        <div>
-          <strong>{{ slot.day }} Period {{ slot.period }}</strong> – {{ slot.subject.name }}
-        </div>
-        <div>
-          <form method="POST" action="{{ url_for('mark_absent') }}" style="display:inline;">
-            <input type="hidden" name="slot_id" value="{{ slot.id }}">
-            <input type="hidden" name="teacher_id" value="{{ teacher.id }}">
-            <button type="submit" class="danger">Mark Absent</button>
-          </form>
-        </div>
-      </div>
-    {% endfor %}
+    <table class="routine-table">
+      <thead>
+        <tr>
+          <th>Day</th>
+          {% for p in range(1, 11) %}
+            <th>Period {{ p }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat'] %}
+        <tr>
+          <th>{{ d }}</th>
+          {% for p in range(1, 11) %}
+            {% set slot = (slots | selectattr("routine_id","equalto",latest.id) | selectattr("day","equalto",d) | selectattr("period","equalto",p) | list).0 %}
+            <td class="{% if slot and slot.absent %}slot absent{% else %}slot normal{% endif %}">
+              {% if slot %}
+                {{ slot.subject.name }}
+                <form method="POST" action="{{ url_for('mark_absent') }}">
+                  <input type="hidden" name="slot_id" value="{{ slot.id }}">
+                  <input type="hidden" name="teacher_id" value="{{ teacher.id }}">
+                  <button type="submit" class="danger">Mark Leave</button>
+                </form>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   {% else %}
-    <p>No accepted routine yet.</p>
+    <p style="text-align:center;">No accepted routine yet.</p>
   {% endif %}
 </div>
 
