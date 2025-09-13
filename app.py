@@ -1,6 +1,7 @@
 import math
 from itertools import cycle
 from collections import defaultdict
+from sqlalchemy.ext.associationproxy import association_proxy
 import random
 from flask import Flask, render_template, request, redirect, flash, url_for
 from flask_sqlalchemy import SQLAlchemy
@@ -56,7 +57,19 @@ class Student(db.Model):
     section_id = db.Column(db.Integer, db.ForeignKey('section.id'), nullable=False)
     classroom_id = db.Column(db.Integer, db.ForeignKey('classroom.id'), nullable=False)
 
-    extra_subjects = db.relationship('ExtraSubject', secondary='student_extra_subject', backref='students')
+    # Relationship to association object
+    extra_subjects_assoc = db.relationship(
+        "StudentExtraSubject",
+        back_populates="student",
+        cascade="all, delete-orphan"
+    )
+
+    # Convenience proxy to access ExtraSubject objects directly
+    extra_subjects = association_proxy(
+        'extra_subjects_assoc',
+        'extra_subject'
+    )
+
 
 
 class ClassRoom(db.Model):
@@ -128,12 +141,19 @@ class ExtraSubject(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(100), nullable=False)
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'), nullable=False)
-
+    student_assocs = db.relationship('StudentExtraSubject', back_populates='extra_subject')
 
 class StudentExtraSubject(db.Model):
     __tablename__ = 'student_extra_subject'
-    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), primary_key=True)
-    extra_subject_id = db.Column(db.Integer, db.ForeignKey('extra_subject.id'), primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
+    extra_subject_id = db.Column(db.Integer, db.ForeignKey('extra_subject.id'), nullable=False)
+    preferred_day = db.Column(db.String(10))       # e.g., 'Tue'
+    preferred_period = db.Column(db.Integer)       # e.g., 9
+
+    student = db.relationship("Student", back_populates="extra_subjects_assoc")
+    extra_subject = db.relationship("ExtraSubject")
+
 
 class Routine(db.Model):
     __tablename__ = 'routine'
@@ -431,46 +451,103 @@ def sforgotpassword():
 
 @app.route('/studentdashboard/<int:id>', methods=['GET', 'POST'])
 def studentdashboard(id):
-    student = Student.query.get(id)
-    if not student:
-        flash("❌ Student not found.")
-        return redirect('/')
+    student = Student.query.get_or_404(id)
 
-    # Handle POST (student choosing extra subjects)
+    # --- Handle POST for extra subjects ---
     if request.method == 'POST':
         extra_subject_id = request.form.get('extra_subject_id')
-        if extra_subject_id:
+        preferred_time = request.form.get('preferred_time')  # e.g., "Tue|9"
+        if extra_subject_id and preferred_time:
+            day, period = preferred_time.split('|')
+            period = int(period)
             extra_subject = ExtraSubject.query.get(int(extra_subject_id))
-            if extra_subject and extra_subject not in student.extra_subjects:
-                student.extra_subjects.append(extra_subject)
-                db.session.commit()
-                flash(f"✅ Added {extra_subject.name} to your subjects")
-
+            if extra_subject:
+                # Check if already selected
+                existing = StudentExtraSubject.query.filter_by(
+                    student_id=student.id,
+                    extra_subject_id=extra_subject.id
+                ).first()
+                if not existing:
+                    new_choice = StudentExtraSubject(
+                        student_id=student.id,
+                        extra_subject_id=extra_subject.id,
+                        preferred_day=day,
+                        preferred_period=period
+                    )
+                    db.session.add(new_choice)
+                    db.session.commit()
+                    flash(f"✅ Added {extra_subject.name} on {day} Period {period}")
         return redirect(url_for('studentdashboard', id=student.id))
 
-    # --- TIMETABLE ---
+    # --- Section routine ---
     section = student.section
-    routines = (
-        Routine.query.filter_by(section_id=section.id, finalized=True)
-        .order_by(Routine.version)
-        .all()
-    )
+    routines = Routine.query.filter_by(section_id=section.id, finalized=True).order_by(Routine.version).all()
     latest_routine = routines[-1] if routines else None
     slots = latest_routine.slots if latest_routine else []
 
-    # --- EXTRA SUBJECTS ---
-    all_extra_subjects = ExtraSubject.query.filter_by(
-        department_id=student.department_id
-    ).all()
-    chosen_extra_subjects = student.extra_subjects
+    # --- Build days and max_period safely ---
+    days_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    if slots:
+        max_period = max(slot.period for slot in slots)
+        days_in_routine = sorted({slot.day for slot in slots}, key=lambda d: days_list.index(d))
+    else:
+        max_period = 10
+        days_in_routine = days_list
+
+    # --- Build personalized_slots for student ---
+    periods = max_period
+    personalized_slots = {day: [None]*periods for day in days_in_routine}
+
+    # Fill section routine
+    for slot in slots:
+        personalized_slots[slot.day][slot.period-1] = {
+            'subject_name': slot.subject.name,
+            'teacher_name': slot.teacher.name if slot.teacher else None,
+            'slot_id': slot.id,
+            'is_extra': False
+        }
+
+    # --- Overlay extra subjects into preferred slots ---
+    chosen_extra_subjects_assoc = student.extra_subjects_assoc
+    free_slots = {day: [] for day in days_in_routine}
+
+    # Mark free slots
+    for day in days_in_routine:
+        for p in range(1, periods+1):
+            if personalized_slots[day][p-1] is None:
+                free_slots[day].append(p)
+
+    # Place extra subjects at their preferred slots
+    for assoc in chosen_extra_subjects_assoc:
+        day = assoc.preferred_day
+        period = assoc.preferred_period
+        if day in personalized_slots and 1 <= period <= periods:
+            if personalized_slots[day][period-1] is None:
+                personalized_slots[day][period-1] = {
+                    'subject_name': assoc.extra_subject.name,
+                    'teacher_name': None,
+                    'slot_id': None,
+                    'is_extra': True
+                }
+                # Remove from free_slots since it's occupied
+                if period in free_slots[day]:
+                    free_slots[day].remove(period)
+
+    # --- All extra subjects for selection dropdown ---
+    all_extra_subjects = ExtraSubject.query.filter_by(department_id=student.department_id).all()
+    chosen_extra_subjects = [assoc.extra_subject for assoc in chosen_extra_subjects_assoc]
 
     return render_template(
         'studentdashboard.html',
         student=student,
         routine=latest_routine,
         slots=slots,
-        all_extra_subjects=all_extra_subjects,
-        chosen_extra_subjects=chosen_extra_subjects
+        days=days_in_routine,
+        max_period=max_period,
+        personalized_slots=personalized_slots,
+        chosen_extra_subjects=chosen_extra_subjects,
+        free_slots=free_slots,
+        all_extra_subjects=all_extra_subjects
     )
 
 
@@ -518,7 +595,6 @@ def seditprofile(id):
         db.session.commit()
         flash("✅ Profile updated successfully.")
         return redirect(f'/studentdashboard/{student.id}')
-
 
 
 # ------------------ PRINCIPAL(ADMIN) ROUTES ------------------

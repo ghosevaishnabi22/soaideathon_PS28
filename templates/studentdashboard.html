@@ -94,28 +94,27 @@
   <a href="/seditprofile/{{ student.id }}">Edit Profile</a>
   <a href="/logout">Logout</a>
 </nav>
-<!-- Flash Messages Section -->
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
-                    {% for message in messages %}
-                        <p>{{ message }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
 
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
+      {% for message in messages %}
+        <p>{{ message }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
-<!-- TIMETABLE -->
+<!-- SECTION TIMETABLE -->
 <div class="card">
   <h3>📅 Section Timetable ({{ student.section.name }})</h3>
-  {% if routine %}
-    <p><strong>Routine Version {{ routine.version }}</strong> (Finalized ✅)</p>
+  {% if slots %}
+    {% set max_period = slots | map(attribute='period') | max %}
     <table>
       <thead>
         <tr>
           <th>Day</th>
-          {% set max_period = slots | map(attribute='period') | max %}
           {% for p in range(1, max_period + 1) %}
             <th>Period {{ p }}</th>
           {% endfor %}
@@ -146,24 +145,73 @@
   {% endif %}
 </div>
 
-<!-- EXTRA SUBJECT SELECTION -->
+<!-- PERSONALIZED STUDENT ROUTINE -->
 <div class="card">
-  <h3>📘 Choose Extra Subjects</h3>
+  <h3>📅 Your Personalized Routine</h3>
+  {% if personalized_slots %}
+    {% set max_period = max_period if slots else 10 %}
+    <table>
+      <thead>
+        <tr>
+          <th>Day</th>
+          {% for p in range(1, max_period + 1) %}
+            <th>Period {{ p }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for day in days %}
+          <tr>
+            <td><strong>{{ day }}</strong></td>
+            {% for p in range(1, max_period + 1) %}
+              {% set slot = personalized_slots[day][p-1] %}
+              <td class="{% if slot and slot.is_extra %}extra-slot{% endif %}">
+                {% if slot %}
+                  {{ slot.subject_name }}
+                  {% if slot.teacher_name %}<br><small>({{ slot.teacher_name }})</small>{% endif %}
+                {% else %}
+                  Free
+                {% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No extra subjects scheduled yet.</p>
+  {% endif %}
+</div>
+
+<!-- EXTRA SUBJECT SELECTION WITH TIME -->
+<div class="card">
+  <h3>📘 Choose Extra Subjects & Preferred Time</h3>
   <form method="POST">
-    <select name="extra_subject_id" required>
+    <label for="extra_subject_id"><strong>Subject:</strong></label>
+    <select name="extra_subject_id" id="extra_subject_id" required>
       <option value="" disabled selected>Select an extra subject</option>
       {% for extra in all_extra_subjects if extra not in chosen_extra_subjects %}
         <option value="{{ extra.id }}">{{ extra.name }}</option>
       {% endfor %}
     </select>
+
+    <label for="preferred_time"><strong>Preferred Time:</strong></label>
+    <select name="preferred_time" id="preferred_time" required>
+      <option value="" disabled selected>Select day & period</option>
+      {% for day, periods in free_slots.items() %}
+        {% for p in periods %}
+          <option value="{{ day }}|{{ p }}">{{ day }} - Period {{ p }}</option>
+        {% endfor %}
+      {% endfor %}
+    </select>
+
     <button type="submit">Add</button>
   </form>
 </div>
 
-<!-- EXTRA SUBJECTS -->
+<!-- EXTRA SUBJECTS LIST -->
 <div class="card">
   <h3>🎉 Your Extra Subjects — Pick ’em in your chill time & level up! 🚀</h3>
-
   {% if chosen_extra_subjects %}
     {% for subject in chosen_extra_subjects %}
       <div class="extra-slot">{{ subject.name }}</div>
