@@ -146,6 +146,12 @@
             border-radius: 5px;
             text-align: center;
         }
+
+        .dept-header {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #007BFF;
+        }
     </style>
 </head>
 <body>
@@ -161,8 +167,6 @@
         <a href="/logout">🚪 Logout</a>
     </nav>
 
-    
-
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             <div class="flash-message">
@@ -176,13 +180,13 @@
     <div class="container">
         <h2>📅 Generate Routine for Section: {{ section.name }}</h2>
 
-        <!-- Fixed routine preview -->
+        <!-- Fixed Preview -->
         <h3>🛠 Fixed Subjects & Free Slots</h3>
         <table class="routine-table">
             <thead>
                 <tr>
                     <th>Day / Period</th>
-                    {% for p in range(1, 7) %}
+                    {% for p in range(1, 11) %}
                         <th>Period {{ p }}</th>
                     {% endfor %}
                 </tr>
@@ -191,7 +195,7 @@
                 {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat'] %}
                 <tr>
                     <th>{{ d }}</th>
-                    {% for p in range(1, 7) %}
+                    {% for p in range(1, 11) %}
                         {% set slot = None %}
                         {% for fs in fixed_subjects if fs.day == d and fs.period == p %}
                             {% set slot = fs %}
@@ -207,36 +211,58 @@
             </tbody>
         </table>
 
-        <!-- Subject selection form -->
+        <!-- Subject Selection Form -->
         <form method="POST" action="{{ url_for('generate_routine', section_id=section.id) }}">
             
             <div class="form-card">
                 <h4>⚙ Settings</h4>
                 <label><strong>Max Classes per Batch:</strong></label>
-                <input type="number" name="max_classes_batch" value="5" min="1" max="10">
+                <input type="number" name="max_classes_batch" value="15" min="1" max="30">
             </div>
 
             <div class="form-card">
-                <h4>📚 Select Subjects to Include</h4>
+                <h4>📚 Select Subjects (Grouped by Department)</h4>
+
+                {% set grouped_subjects = {} %}
                 {% for subject in subjects %}
                     {% if not subject.is_fixed %}
-                    <div class="subject-box">
-                        <input type="checkbox" name="subject_ids" value="{{ subject.id }}" id="sub{{ subject.id }}">
-                        <label for="sub{{ subject.id }}"><strong>{{ subject.name }}</strong></label>
+                        {% set _ = grouped_subjects.setdefault(subject.department.name, []).append(subject) %}
+                    {% endif %}
+                {% endfor %}
 
-                        <label>Classes per Week:</label>
-                        <select name="classes_{{ subject.id }}">
-                            <option value="3">Normal (3 days/week)</option>
-                            <option value="6">Fixed (6 days/week)</option>
-                            <option value="2">Selective (2 days/week)</option>
-                        </select>
-                        <br>
-                        <small><em>👨‍🏫 Teacher auto-assigned by workload</em></small>
+                {% for dep, subs in grouped_subjects.items() %}
+                    {% if dep != "General" %}
+                    <div class="subject-box">
+                        <div class="dept-header">
+                            {{ dep }} 
+                            <input type="checkbox" id="select_all_{{ dep }}" onclick="toggleDept('{{ dep }}')">
+                            <label for="select_all_{{ dep }}" style="font-weight:normal;">Select All</label>
+                        </div>
+                        <div style="padding-left:10px;">
+                            {% for subject in subs %}
+                                <div class="subject-box" style="box-shadow:none;">
+                                    <input type="checkbox" 
+                                           name="subject_ids" 
+                                           value="{{ subject.id }}" 
+                                           id="sub{{ subject.id }}" 
+                                           class="dept-{{ dep }}">
+                                    <label for="sub{{ subject.id }}"><strong>{{ subject.name }}</strong></label>
+
+                                    <label style="margin-left:10px;">Classes per Week:</label>
+                                    <select name="classes_{{ subject.id }}">
+                                        <option value="3">Normal (3 days/week)</option>
+                                        <option value="6">Fixed (6 days/week)</option>
+                                        <option value="2">Selective (2 days/week)</option>
+                                    </select>
+                                    <br>
+                                    <small><em>👨‍🏫 Teacher auto-assigned</em></small>
+                                </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     {% endif %}
                 {% endfor %}
             </div>
-
 
             <div class="btn-area">
                 <button type="submit" class="btn btn-primary">⚡ Generate 3 Routine Options</button>
@@ -244,5 +270,13 @@
             </div>
         </form>
     </div>
+
+    <script>
+        function toggleDept(dep) {
+            let master = document.getElementById("select_all_" + dep);
+            let boxes = document.querySelectorAll(".dept-" + dep);
+            boxes.forEach(cb => cb.checked = master.checked);
+        }
+    </script>
 </body>
 </html>

@@ -1013,13 +1013,17 @@ def get_or_create_special_subjects():
     return lunch_subject, games_subject
 
 
-def generate_three_options(section_id, subject_ids, class_counts, periods_per_day=10, max_classes_per_batch=30):
+def generate_three_options(section_id, subject_ids, class_counts, periods_per_day=10, max_classes_per_batch=60):
     """
     Generate exactly 3 Routine rows (persisted) and associated RoutineSlot rows.
 
+    Rules:
     - period 7 (13:00–14:00) → fixed "Lunch Break"
     - period 10 (18:00–19:00) → fixed "Games"
     - ensures Mon–Sat all periods are filled
+    - max 2 consecutive classes of same subject
+    - max 2 classes/day per subject
+    - same teacher always teaches same subject for same section
     - deletes old non-finalized routines before generating
     """
     days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -1048,6 +1052,12 @@ def generate_three_options(section_id, subject_ids, class_counts, periods_per_da
 
         timetable = {day: [None] * periods_per_day for day in days}
         total_assigned = 0
+
+        # Track per-day subject counts
+        subject_day_counts = {day: {} for day in days}
+
+        # Track teacher assignment consistency
+        teacher_map = {}  # (section_id, subject_id) -> teacher_id
 
         # 🔹 Step 5: Add fixed Lunch + Games slots
         for day in days:
@@ -1087,16 +1097,41 @@ def generate_three_options(section_id, subject_ids, class_counts, periods_per_da
                         continue
                     if assigned >= required or total_assigned >= max_classes_per_batch:
                         break
-                    if timetable[day][p] is None:
+                    if timetable[day][p] is not None:
+                        continue
+
+                    # ✅ Rule 1: Prevent >2 consecutive same subject
+                    if p >= 2 and timetable[day][p-1] and timetable[day][p-2]:
+                        if timetable[day][p-1][0] == sid and timetable[day][p-2][0] == sid:
+                            continue
+                    if p >= 1 and p < periods_per_day - 1:
+                        if timetable[day][p-1] and timetable[day][p+1]:
+                            if timetable[day][p-1][0] == sid and timetable[day][p+1][0] == sid:
+                                continue
+
+                    # ✅ Rule 2: Max 2/day for same subject
+                    if subject_day_counts[day].get(sid, 0) >= 2:
+                        continue
+
+                    # ✅ Rule 3: Same teacher for same subject in section
+                    if (section_id, sid) in teacher_map:
+                        teacher_id = teacher_map[(section_id, sid)]
+                    else:
                         teacher_id = assign_teacher_balanced(section_id)
-                        slot = RoutineSlot(
-                            routine_id=routine.id, day=day, period=p + 1,
-                            subject_id=int(sid), teacher_id=teacher_id
-                        )
-                        db.session.add(slot)
-                        timetable[day][p] = (sid, teacher_id)
-                        assigned += 1
-                        total_assigned += 1
+                        teacher_map[(section_id, sid)] = teacher_id
+
+                    # Assign slot
+                    slot = RoutineSlot(
+                        routine_id=routine.id, day=day, period=p + 1,
+                        subject_id=int(sid), teacher_id=teacher_id
+                    )
+                    db.session.add(slot)
+                    timetable[day][p] = (sid, teacher_id)
+
+                    # Update trackers
+                    assigned += 1
+                    total_assigned += 1
+                    subject_day_counts[day][sid] = subject_day_counts[day].get(sid, 0) + 1
 
                 if assigned >= required or total_assigned >= max_classes_per_batch:
                     break
@@ -1145,7 +1180,7 @@ def create_sections():
     dept_names = [d.name for d in dept]
     for dept_name in dept_names:
         dept = Department.query.filter_by(name=dept_name).first()
-        for i in range(1, 5):  # 4 sections each
+        for i in range(1, 4):  # 4 sections each
             if dept:
                 sec_name = f"{dept_name}{i}"
                 if not Section.query.filter_by(name=sec_name, department_id=dept.id).first():
@@ -1160,7 +1195,7 @@ def create_classrooms():
     sections = Section.query.all()
     random.shuffle(sections)
 
-    for _ in range(8):  # create 8 classrooms
+    for _ in range(15):  # create 8 classrooms
         classroom = ClassRoom(capacity=30, name="TEMP")
         db.session.add(classroom)
         db.session.commit()  # to get id
@@ -1194,29 +1229,66 @@ def create_classrooms():
 
 def create_teachers():
     teacher_data = [
-        ('Alice', 'alice@iterease.com', 'Teacher@2025', '9000000001', '10 Teacher Lane, City', 'Literature'),
-        ('Bob', 'bob@iterease.com', 'Teacher@2025', '9000000002', '11 Teacher Lane, City', 'Maths'),
-        ('Charlie', 'charlie@iterease.com', 'Teacher@2025', '9000000003', '12 Teacher Lane, City', 'CSE'),
-        ('David', 'david@iterease.com', 'Teacher@2025', '9000000004', '13 Teacher Lane, City', 'CSE'),
-        ('Eve', 'eve@iterease.com', 'Teacher@2025', '9000000005', '14 Teacher Lane, City', 'EEE'),
-        ('Frank', 'frank@iterease.com', 'Teacher@2025', '9000000006', '15 Teacher Lane, City', 'MSE'),
-        ('Grace', 'grace@iterease.com', 'Teacher@2025', '9000000007', '16 Teacher Lane, City', 'Literature')
+        # Literature
+        ('Amit', 'amit@iterease.com', 'Teacher@2025', '9000000001', '1 Lit Lane, City', 'Literature'),
+        ('Neha', 'neha@iterease.com', 'Teacher@2025', '9000000002', '2 Lit Lane, City', 'Literature'),
+        ('Ravi', 'ravi@iterease.com', 'Teacher@2025', '9000000003', '3 Lit Lane, City', 'Literature'),
+        ('Pooja', 'pooja@iterease.com', 'Teacher@2025', '9000000004', '4 Lit Lane, City', 'Literature'),
+        ('Kiran', 'kiran@iterease.com', 'Teacher@2025', '9000000005', '5 Lit Lane, City', 'Literature'),
+
+        # Maths
+        ('Arun', 'arun@iterease.com', 'Teacher@2025', '9000000006', '6 Maths Lane, City', 'Maths'),
+        ('Sunita', 'sunita@iterease.com', 'Teacher@2025', '9000000007', '7 Maths Lane, City', 'Maths'),
+        ('Manoj', 'manoj@iterease.com', 'Teacher@2025', '9000000008', '8 Maths Lane, City', 'Maths'),
+        ('Kavita', 'kavita@iterease.com', 'Teacher@2025', '9000000009', '9 Maths Lane, City', 'Maths'),
+        ('Deepak', 'deepak@iterease.com', 'Teacher@2025', '9000000010', '10 Maths Lane, City', 'Maths'),
+
+        # CSE
+        ('Suresh', 'suresh@iterease.com', 'Teacher@2025', '9000000011', '11 CSE Lane, City', 'CSE'),
+        ('Meena', 'meena@iterease.com', 'Teacher@2025', '9000000012', '12 CSE Lane, City', 'CSE'),
+        ('Rajesh', 'rajesh@iterease.com', 'Teacher@2025', '9000000013', '13 CSE Lane, City', 'CSE'),
+        ('Anita', 'anita@iterease.com', 'Teacher@2025', '9000000014', '14 CSE Lane, City', 'CSE'),
+        ('Vikas', 'vikas@iterease.com', 'Teacher@2025', '9000000015', '15 CSE Lane, City', 'CSE'),
+
+        # MSE
+        ('Ajay', 'ajay@iterease.com', 'Teacher@2025', '9000000016', '16 MSE Lane, City', 'MSE'),
+        ('Seema', 'seema@iterease.com', 'Teacher@2025', '9000000017', '17 MSE Lane, City', 'MSE'),
+        ('Rahul', 'rahul@iterease.com', 'Teacher@2025', '9000000018', '18 MSE Lane, City', 'MSE'),
+        ('Lata', 'lata@iterease.com', 'Teacher@2025', '9000000019', '19 MSE Lane, City', 'MSE'),
+        ('Nitin', 'nitin@iterease.com', 'Teacher@2025', '9000000020', '20 MSE Lane, City', 'MSE'),
+
+        # EEE
+        ('Prakash', 'prakash@iterease.com', 'Teacher@2025', '9000000021', '21 EEE Lane, City', 'EEE'),
+        ('Geeta', 'geeta@iterease.com', 'Teacher@2025', '9000000022', '22 EEE Lane, City', 'EEE'),
+        ('Mukesh', 'mukesh@iterease.com', 'Teacher@2025', '9000000023', '23 EEE Lane, City', 'EEE'),
+        ('Shweta', 'shweta@iterease.com', 'Teacher@2025', '9000000024', '24 EEE Lane, City', 'EEE'),
+        ('Harish', 'harish@iterease.com', 'Teacher@2025', '9000000025', '25 EEE Lane, City', 'EEE'),
+
+        # CE
+        ('Anil', 'anil@iterease.com', 'Teacher@2025', '9000000026', '26 CE Lane, City', 'CE'),
+        ('Rita', 'rita@iterease.com', 'Teacher@2025', '9000000027', '27 CE Lane, City', 'CE'),
+        ('Santosh', 'santosh@iterease.com', 'Teacher@2025', '9000000028', '28 CE Lane, City', 'CE'),
+        ('Jyoti', 'jyoti@iterease.com', 'Teacher@2025', '9000000029', '29 CE Lane, City', 'CE'),
+        ('Mahesh', 'mahesh@iterease.com', 'Teacher@2025', '9000000030', '30 CE Lane, City', 'CE'),
     ]
+
     for name, email, pwd, phone, address, dep_name in teacher_data:
         if not Teacher.query.filter_by(email=email).first():
             dep = Department.query.filter_by(name=dep_name).first()
-            t = Teacher(
-                name=name,
-                email=email,
-                password=pwd,
-                phone=phone,
-                address=address,
-                department_id=dep.id,
-                is_dean=False
-            )
-            db.session.add(t)
+            if dep:
+                t = Teacher(
+                    name=name,
+                    email=email,
+                    password=pwd,
+                    phone=phone,
+                    address=address,
+                    department_id=dep.id,
+                    is_dean=False
+                )
+                db.session.add(t)
+
     db.session.commit()
-    print("✅ Teachers created successfully.")
+    print("✅ 5 teachers created per department successfully.")
 
 
 def create_students():
@@ -1248,10 +1320,30 @@ def create_students():
 
 def create_subjects():
     subject_data = {
-        "CSE": ["Data Structures", "Algorithms", "Operating Systems"],
-        "MSE": ["Material Science", "Thermodynamics"],
-        "EEE": ["Circuits", "Electromagnetics"],
-        "CE": ["Structural Analysis", "Hydraulics"]
+        "Literature": [
+            "English Poetry", "Modern Drama", "Indian Literature", 
+            "World Literature", "Literary Criticism"
+        ],
+        "Maths": [
+            "Algebra", "Calculus", "Geometry", 
+            "Probability", "Statistics"
+        ],
+        "CSE": [
+            "Data Structures", "Algorithms", "Operating Systems", 
+            "Computer Networks", "Database Systems", "Artificial Intelligence"
+        ],
+        "MSE": [
+            "Material Science", "Thermodynamics", "Metallurgy", 
+            "Nanomaterials", "Composite Materials"
+        ],
+        "EEE": [
+            "Circuits", "Electromagnetics", "Power Systems", 
+            "Control Systems", "Digital Electronics"
+        ],
+        "CE": [
+            "Structural Analysis", "Hydraulics", "Transportation Engineering", 
+            "Geotechnical Engineering", "Construction Management"
+        ]
     }
 
     for dep_name, subjects in subject_data.items():
@@ -1264,7 +1356,7 @@ def create_subjects():
                 db.session.add(subject)
 
     db.session.commit()
-    print("✅ Subjects created successfully.")
+    print("✅ Subjects created successfully (5+ per department).")
 
 
 def create_fixed_subjects():
@@ -1301,10 +1393,12 @@ def create_fixed_subjects():
 
 def create_extra_subjects():
     extra_subject_data = {
-        "CSE": ["AI Lab", "Robotics"],
-        "MSE": ["Nano Tech", "Advanced Materials"],
-        "EEE": ["Power Lab", "Control Systems"],
-        "CE": ["Surveying", "Environmental Studies"]
+        "Literature": ["Creative Writing", "Comparative Literature", "Linguistics"],
+        "Maths": ["Number Theory", "Discrete Mathematics", "Mathematical Modelling"],
+        "CSE": ["AI Lab", "Robotics", "Cloud Computing"],
+        "MSE": ["Nano Tech", "Advanced Materials", "Corrosion Engineering"],
+        "EEE": ["Power Lab", "Control Systems", "Renewable Energy"],
+        "CE": ["Surveying", "Environmental Studies", "Urban Planning"]
     }
 
     for dep_name, extras in extra_subject_data.items():
@@ -1317,7 +1411,8 @@ def create_extra_subjects():
                 db.session.add(extra_sub)
 
     db.session.commit()
-    print("✅ Extra subjects created successfully.")
+    print("✅ 3 extra subjects created per department successfully.")
+
 
 
 if __name__ == '__main__':
