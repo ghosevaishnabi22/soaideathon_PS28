@@ -77,10 +77,13 @@ class ClassRoom(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
     capacity = db.Column(db.Integer, nullable=False, default=30)
+    department_id = db.Column(db.Integer, db.ForeignKey('department.id'), nullable=False)
 
     batches = db.relationship('Batch', backref='classroom')
     students = db.relationship('Student', backref='classroom')
     teachers = db.relationship('Teacher', backref='classroom')
+
+
 
 
 class Batch(db.Model):
@@ -96,12 +99,17 @@ class Batch(db.Model):
 class Section(db.Model):
     __tablename__ = 'section'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(10), nullable=False, unique=True)
+    name = db.Column(db.String(10), nullable=False)
     department_id = db.Column(db.Integer, db.ForeignKey('department.id'), nullable=False)
     selected_routine = db.Column(db.String(10), nullable=True)
 
     students = db.relationship('Student', backref='section')
     routines = db.relationship('Routine', backref='section')
+
+    __table_args__ = (
+    db.UniqueConstraint('name', 'department_id', name='uq_section_department'),
+    )
+
 
 
 class Department(db.Model):
@@ -114,6 +122,8 @@ class Department(db.Model):
     sections = db.relationship('Section', backref='department')
     subjects = db.relationship('Subject', backref='department')
     extra_subjects = db.relationship('ExtraSubject', backref='department')
+    classrooms = db.relationship('ClassRoom', backref='department', cascade="all, delete-orphan")
+
 
 
 class Subject(db.Model):
@@ -618,7 +628,7 @@ def deandashboard(id):
         allocated_sections = Batch.query.with_entities(Batch.section_id).distinct().count()
         total_sections = len(sections)
         return render_template('deandashboard.html',dean=dean,classrooms=classrooms,batches=batches,sections=sections,departments=departments,allocated_sections=allocated_sections,total_sections=total_sections)
-
+'''
 @app.route('/addclassroom', methods=['GET', 'POST'])
 def addclassroom():
     dean = Teacher.query.filter_by(is_dean=True).first()
@@ -715,6 +725,7 @@ def addsection():
             flash("✅ Section created but waiting for classroom allocation.")
 
         return redirect(f'/deandashboard/{id}')
+'''
 
 @app.route('/departmentdetails/<id>', methods=['GET', 'POST'])
 def departmentdetails(id):
@@ -727,26 +738,92 @@ def departmentdetails(id):
     departments = Department.query.all()
     return render_template('departmentdetails.html', dean=dean, departments=departments, sections=sections)
 
+
 @app.route('/adddepartment', methods=['GET', 'POST'])
 def adddepartment():
     dean = Teacher.query.filter_by(is_dean=True).first()
+
     if request.method == 'GET':
         return render_template('adddepartment.html', dean=dean)
 
     if request.method == 'POST':
         dep_name = request.form.get('dep_name')
+        student_count = int(request.form.get('student_count', 120))
+        section_count = int(request.form.get('section_count', 2))
+        capacity = int(request.form.get('capacity', 30))
 
+        # ❌ Prevent duplicates
         if Department.query.filter_by(name=dep_name).first():
             flash("❌ Department already exists.")
             return redirect('/adddepartment')
 
+        # 1️⃣ Create Department
         new_department = Department(name=dep_name)
         db.session.add(new_department)
         db.session.commit()
 
-        flash("✅ Department added successfully.")
+        sections = []
+        classrooms = []
+
+        # 2️⃣ Create Sections + Classrooms + Batches at once
+        for i in range(section_count):
+            # create section
+            section = Section(
+                name=f"{dep_name}_SEC{i+1}",
+                department_id=new_department.id
+            )
+            db.session.add(section)
+            db.session.flush()  # so section.id is available
+            sections.append(section)
+
+            # create classroom for this section
+            classroom = ClassRoom(
+                name=f"{dep_name[:3].upper()}_CR{i+1}",
+                capacity=capacity,
+                department_id=new_department.id
+            )
+            db.session.add(classroom)
+            db.session.flush()  # so classroom.id is available
+            classrooms.append(classroom)
+
+            # create 2 batches inside this classroom
+            morning = Batch(
+                name="Morning",
+                section_id=section.id,
+                classroom_id=classroom.id
+            )
+            evening = Batch(
+                name="Evening",
+                section_id=section.id,
+                classroom_id=classroom.id
+            )
+            db.session.add_all([morning, evening])
+
+        db.session.commit()
+
+        # 3️⃣ Distribute students evenly across sections → then batches
+        students_per_section = student_count // section_count
+        for section in sections:
+            sec_batches = Batch.query.filter_by(section_id=section.id).all()
+            for i in range(students_per_section):
+                batch = sec_batches[i % 2]  # alternate Morning/Evening
+                student_email = f"{section.name.lower()}_student{i+1}@mail.com"
+                student = Student(
+                    name=f"Student {section.name}{i+1}",
+                    email=student_email,
+                    password="Student@2025",
+                    phone=str(9000000000 + i + section.id * 100),
+                    address=f"Address {i+1}, {section.name} Block",
+                    section_id=section.id,
+                    department_id=new_department.id,
+                    classroom_id=batch.classroom_id
+                )
+                db.session.add(student)
+
+        db.session.commit()
+
+        flash("✅ Department, sections, classrooms, batches (Morning/Evening), and students created successfully.")
         return redirect(f'/departmentdetails/{dean.id}')
- 
 
 @app.route('/addsubject/<dept_id>', methods=['GET', 'POST'])
 def addsubject(dept_id):
@@ -765,6 +842,26 @@ def addsubject(dept_id):
 
         flash("✅ Subject added successfully.")
         return redirect(f'/departmentdetails/{dean.id}')
+
+@app.route('/addextrasubject/<int:dept_id>', methods=['POST'])
+def add_extra_subject(dept_id):
+    department = Department.query.get_or_404(dept_id)
+    dean = Teacher.query.filter_by(is_dean=True).first()
+
+    extra_subject_name = request.form.get('extra_subject_name')
+
+    if not extra_subject_name.strip():
+        flash("❌ Extra Subject name cannot be empty.")
+        return redirect(f'/departmentdetails/{dean.id}')
+
+    new_extra = ExtraSubject(name=extra_subject_name, department_id=department.id)
+    db.session.add(new_extra)
+    db.session.commit()
+
+    flash("✅ Extra Subject added successfully.")
+    return redirect(f'/departmentdetails/{dean.id}')
+
+
     
 @app.route('/routine/<int:dean_id>')
 def select_section(dean_id):
@@ -790,12 +887,27 @@ def generate_routine(section_id):
     subjects = Subject.query.all()
 
     if request.method == 'GET':
+        # ✅ Build fixed subjects for preview
+        days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+        lunch_subject = Subject.query.filter_by(name="Lunch").first()
+        games_subject = Subject.query.filter_by(name="Games").first()
+
+        fixed_subjects = []
+        for d in days:
+            fixed_subjects.append({
+                "day": d, "period": 6, "subject": lunch_subject, "time": "12:00 - 13:00"
+            })
+            fixed_subjects.append({
+                "day": d, "period": 10, "subject": games_subject, "time": "17:00 - 18:00"
+            })
+
         return render_template(
             'generate_routine.html',
             dean=dean,
             section=section,
             subjects=subjects,
-            fixed_subjects=[]
+            fixed_subjects=fixed_subjects
         )
 
     if request.method == 'POST':
@@ -809,6 +921,16 @@ def generate_routine(section_id):
         for sid in selected_subject_ids:
             class_counts[int(sid)] = int(request.form.get(f'classes_{sid}', 3))
 
+        # 🧹 Cleanup wrong lunch slots (old data at period 7)
+        wrong_slots = RoutineSlot.query.join(Routine).filter(
+            Routine.section_id == section.id,
+            Routine.finalized == False,
+            RoutineSlot.period == 7
+        ).all()
+        for slot in wrong_slots:
+            db.session.delete(slot)
+        db.session.commit()
+
         # ✅ Generate and save 3 routine options into DB
         routines = generate_three_options(
             section.id,
@@ -817,8 +939,10 @@ def generate_routine(section_id):
         )
 
         # Query them back with slots loaded (get the newly generated versions)
-        options = Routine.query.filter_by(section_id=section.id, finalized=False).order_by(Routine.version).all()
-
+        options = Routine.query.filter_by(
+            section_id=section.id,
+            finalized=False
+        ).order_by(Routine.version).all()
 
         return render_template(
             'show_routine_options.html',
@@ -896,6 +1020,34 @@ def show_routine(section_id):
         return redirect(url_for("routine_management", dean_id=dean.id if dean else 1))
 
     return render_template("show_routine.html", section=section, routine=routine, dean=dean)
+
+@app.route("/edit_routine_slot/<int:slot_id>", methods=["GET", "POST"])
+def edit_routine_slot(slot_id):
+    slot = RoutineSlot.query.get_or_404(slot_id)
+    dean = Teacher.query.filter_by(is_dean=True).first()
+    section = slot.routine.section
+
+    subjects = Subject.query.all()  # you can filter by dept if needed
+
+    if request.method == "GET":
+        return render_template(
+            "edit_routine_slot.html",
+            dean=dean,
+            section=section,
+            slot=slot,
+            subjects=subjects
+        )
+
+    if request.method == "POST":
+        new_subject_id = int(request.form.get("subject_id"))
+        slot.subject_id = new_subject_id
+
+        # (optional) update teacher assignment based on subject
+        slot.teacher_id = assign_teacher_balanced(section.id)
+
+        db.session.commit()
+        flash("✅ Routine slot updated successfully!", "success")
+        return redirect(url_for("show_routine", section_id=section.id))
 
 
 @app.route('/message/<int:dean_id>', methods=['GET', 'POST'])
@@ -1027,6 +1179,49 @@ def deansummary(dean_id):
         plot_path_4=plot_path_4
     )
 
+@app.route('/addteacher', methods=['GET', 'POST'])
+def addteacher():
+    dean = Teacher.query.filter_by(is_dean=True).first()
+    departments = Department.query.all()
+    classrooms = ClassRoom.query.all()  # since teacher can be linked to a classroom
+
+    if request.method == 'GET':
+        return render_template('addteacher.html', dean=dean, departments=departments, classrooms=classrooms)
+
+    if request.method == 'POST':
+        name = request.form.get("name")
+        email = request.form.get("email")
+        password = request.form.get("password") or "Teacher@2025"
+        phone = request.form.get("phone")
+        address = request.form.get("address")
+        department_id = request.form.get("department_id")
+        classroom_id = request.form.get("classroom_id") or None
+
+        # Prevent duplicates
+        if Teacher.query.filter_by(email=email).first():
+            flash("❌ Teacher with this email already exists.")
+            return redirect('/addteacher')
+        if Teacher.query.filter_by(phone=phone).first():
+            flash("❌ Teacher with this phone number already exists.")
+            return redirect('/addteacher')
+
+        new_teacher = Teacher(
+            name=name,
+            email=email,
+            password=password,
+            phone=phone,
+            address=address,
+            department_id=department_id,
+            classroom_id=classroom_id
+        )
+        db.session.add(new_teacher)
+        db.session.commit()
+
+        flash("✅ Teacher added successfully.")
+        return redirect(f'/showfaculty/{dean.id}')
+
+
+
 
 #------------------- FUNCTIONS ------------------
 def assign_teacher_balanced(section_id):
@@ -1094,7 +1289,7 @@ def generate_three_options(section_id, subject_ids, class_counts, periods_per_da
     Generate exactly 3 Routine rows (persisted) and associated RoutineSlot rows.
 
     Rules:
-    - period 7 (13:00–14:00) → fixed "Lunch Break"
+    - period 6 (12:00–13:00) → fixed "Lunch Break"
     - period 10 (18:00–19:00) → fixed "Games"
     - ensures Mon–Sat all periods are filled
     - max 2 consecutive classes of same subject
@@ -1137,15 +1332,15 @@ def generate_three_options(section_id, subject_ids, class_counts, periods_per_da
 
         # 🔹 Step 5: Add fixed Lunch + Games slots
         for day in days:
-            # Period 7 → Lunch
-            timetable[day][6] = (lunch_subject.id, None)
+            # Period 6 → Lunch
+            timetable[day][6 - 1] = (lunch_subject.id, None)
             db.session.add(RoutineSlot(
-                routine_id=routine.id, day=day, period=7,
+                routine_id=routine.id, day=day, period=6,
                 subject_id=lunch_subject.id, teacher_id=None
             ))
 
             # Period 10 → Games
-            timetable[day][9] = (games_subject.id, None)
+            timetable[day][10 - 1] = (games_subject.id, None)
             db.session.add(RoutineSlot(
                 routine_id=routine.id, day=day, period=10,
                 subject_id=games_subject.id, teacher_id=None
@@ -1169,7 +1364,8 @@ def generate_three_options(section_id, subject_ids, class_counts, periods_per_da
                 random.shuffle(period_indices)
 
                 for p in period_indices:
-                    if (p + 1) in (7, 10):  # Skip fixed Lunch & Games
+                    period_num = p + 1  # convert to 1-based
+                    if period_num in (6, 10):  # Skip fixed Lunch & Games
                         continue
                     if assigned >= required or total_assigned >= max_classes_per_batch:
                         break
@@ -1180,7 +1376,7 @@ def generate_three_options(section_id, subject_ids, class_counts, periods_per_da
                     if p >= 2 and timetable[day][p-1] and timetable[day][p-2]:
                         if timetable[day][p-1][0] == sid and timetable[day][p-2][0] == sid:
                             continue
-                    if p >= 1 and p < periods_per_day - 1:
+                    if 0 < p < periods_per_day - 1:
                         if timetable[day][p-1] and timetable[day][p+1]:
                             if timetable[day][p-1][0] == sid and timetable[day][p+1][0] == sid:
                                 continue
@@ -1198,7 +1394,7 @@ def generate_three_options(section_id, subject_ids, class_counts, periods_per_da
 
                     # Assign slot
                     slot = RoutineSlot(
-                        routine_id=routine.id, day=day, period=p + 1,
+                        routine_id=routine.id, day=day, period=period_num,
                         subject_id=int(sid), teacher_id=teacher_id
                     )
                     db.session.add(slot)
@@ -1222,6 +1418,31 @@ def generate_three_options(section_id, subject_ids, class_counts, periods_per_da
 
 
 
+def create_classrooms_for_department(department_id, capacity=30):
+    department = Department.query.get(department_id)
+    if not department:
+        raise ValueError("Department not found")
+
+    total_students = len(department.students)
+    if total_students == 0:
+        return [] 
+
+    num_classrooms = math.ceil(total_students / capacity)
+
+    classrooms = []
+    for i in range(num_classrooms):
+        classroom = ClassRoom(
+            name=f"{department.name[:3].upper()}_CR{i+1}",
+            capacity=capacity,
+            department_id=department.id
+        )
+        db.session.add(classroom)
+        classrooms.append(classroom)
+
+    db.session.commit()
+    return classrooms
+
+
 # ------------------ DATABASE SEEDING ------------------
 def create_dean():
     existing_dean = Teacher.query.filter_by(is_dean=True).first()
@@ -1241,67 +1462,78 @@ def create_dean():
     else:
         print("ℹ️ Dean user already exists.")
 
-
-def create_departments():
+def create_department(num_sections=3, students_per_section=5):
     departments = ['Literature', 'Maths', 'CSE', 'MSE', 'EEE', 'CE']
-    for dep in departments:
-        if not Department.query.filter_by(name=dep).first():
-            db.session.add(Department(name=dep))
-    db.session.commit()
-    print("✅ Departments created successfully.")
 
+    for dep_name in departments:
+        # Skip if department already exists
+        if Department.query.filter_by(name=dep_name).first():
+            continue
 
-def create_sections():
-    dept = Department.query.all()
-    dept_names = [d.name for d in dept]
-    for dept_name in dept_names:
-        dept = Department.query.filter_by(name=dept_name).first()
-        for i in range(1, 4):  # 4 sections each
-            if dept:
-                sec_name = f"{dept_name}{i}"
-                if not Section.query.filter_by(name=sec_name, department_id=dept.id).first():
-                    section = Section(name=sec_name, department_id=dept.id)
-                    db.session.add(section)
-    db.session.commit()
-    print("✅ Sections created successfully.")
-
-
-def create_classrooms():
-    # shuffle sections so batches get distributed
-    sections = Section.query.all()
-    random.shuffle(sections)
-
-    for _ in range(15):  # create 8 classrooms
-        classroom = ClassRoom(capacity=30, name="TEMP")
-        db.session.add(classroom)
-        db.session.commit()  # to get id
-
-        classroom.name = f"CR{classroom.id}"
+        # 1. Department
+        department = Department(name=dep_name)
+        db.session.add(department)
         db.session.commit()
 
-        # Assign batches if sections available
-        if len(sections) >= 1:
-            morning_section = sections.pop()
+        sections = []
+
+        # 2. Create Sections
+        for i in range(1, num_sections + 1):
+            section = Section(name=f"{dep_name}{i}", department_id=department.id)
+            db.session.add(section)
+            db.session.commit()
+            sections.append(section)
+
+        classrooms = []
+        batches = []
+
+        # 3. Create Classrooms (1 per section)
+        for idx, sec in enumerate(sections, start=1):
+            classroom = ClassRoom(
+                name=f"{dep_name.upper()}_CR{idx}",
+                capacity=30,
+                department_id=department.id
+            )
+            db.session.add(classroom)
+            db.session.commit()
+            classrooms.append(classroom)
+
+            # 4. Create 2 batches (Morning & Evening) for each section
             morning_batch = Batch(
-                name="Morning",
-                classroom_id=classroom.id,
-                section_id=morning_section.id
+                name=f"{sec.name}_Morning",
+                section_id=sec.id,
+                classroom_id=classroom.id
             )
-            db.session.add(morning_batch)
-
-        if len(sections) >= 1:
-            evening_section = sections.pop()
             evening_batch = Batch(
-                name="Evening",
-                classroom_id=classroom.id,
-                section_id=evening_section.id
+                name=f"{sec.name}_Evening",
+                section_id=sec.id,
+                classroom_id=classroom.id
             )
-            db.session.add(evening_batch)
 
+            db.session.add_all([morning_batch, evening_batch])
+            db.session.commit()
+            batches.extend([morning_batch, evening_batch])
+
+        # 5. Students → assign to sections (not batches)
+        for sec in sections:
+            for j in range(1, students_per_section + 1):
+                student_email = f"{sec.name.lower()}student{j}@iterease.com"
+                if not Student.query.filter_by(email=student_email).first():
+                    student = Student(
+                        name=f"Student {sec.name}{j}",
+                        email=student_email,
+                        password="Student@2025",
+                        phone=str(8000000000 + j + sec.id * 10),
+                        address=f"{j} Student Lane, {sec.name} Block",
+                        section_id=sec.id,
+                        department_id=department.id,
+                        classroom_id=ClassRoom.query.filter_by(department_id=department.id).first().id
+                    )
+                    db.session.add(student)
         db.session.commit()
 
-    print("✅ Classrooms with Morning/Evening batches created.")
-
+        print(f"✅ Department {dep_name} created with {num_sections} sections, "
+              f"{len(classrooms)} classrooms, 2 batches per section, and students.")
 
 def create_teachers():
     teacher_data = [
@@ -1365,33 +1597,6 @@ def create_teachers():
 
     db.session.commit()
     print("✅ 5 teachers created per department successfully.")
-
-
-def create_students():
-    sections = Section.query.all()
-    for section in sections:
-        # Get batches for this section
-        batches = Batch.query.filter_by(section_id=section.id).all()
-        if not batches:
-            continue
-
-        for i in range(1, 6):  # 5 students per section
-            student_email = f"{section.name.lower()}student{i}@iterease.com"
-            if not Student.query.filter_by(email=student_email).first():
-                batch = random.choice(batches)  # assign batch
-                student = Student(
-                    name=f"Student {section.name}{i}",
-                    email=student_email,
-                    password="Student@2025",
-                    phone=str(8000000000 + i + section.id * 10),
-                    address=f"{i} Student Lane, {section.name} Block",
-                    section_id=section.id,
-                    department_id=section.department_id,
-                    classroom_id=batch.classroom_id
-                )
-                db.session.add(student)
-    db.session.commit()
-    print("✅ Students created successfully.")
 
 
 def create_subjects():
@@ -1490,14 +1695,10 @@ def create_extra_subjects():
     print("✅ 3 extra subjects created per department successfully.")
 
 
-
 if __name__ == '__main__':
     create_dean()
-    create_departments()
-    create_sections()
+    create_department(num_sections=3, students_per_section=5)
     create_teachers()
-    create_classrooms()
-    create_students()
     create_subjects()
     create_fixed_subjects()
     create_extra_subjects()

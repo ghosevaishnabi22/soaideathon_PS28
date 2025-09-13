@@ -111,21 +111,32 @@
             background: #0056b3;
             transform: scale(1.05);
         }
+
+        .edit-link {
+            font-size: 12px;
+            color: #007BFF;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 4px;
+        }
+
+        .edit-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
     
     <!-- Flash Messages Section -->
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
-                    {% for message in messages %}
-                        <p>{{ message }}</p>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
 
     <h2>📑 Finalized Routine for Section: {{ section.name }}</h2>
 
@@ -168,7 +179,8 @@
                                     {% else %}
                                         <td>
                                             <strong>{{ slot.subject.name }}</strong><br>
-                                            <small>{{ slot.teacher.name }}</small>
+                                            <small>{{ slot.teacher.name }}</small><br>
+                                            <a href="{{ url_for('edit_routine_slot', slot_id=slot.id) }}" class="edit-link">✏️ Edit</a>
                                         </td>
                                     {% endif %}
                                 {% else %}

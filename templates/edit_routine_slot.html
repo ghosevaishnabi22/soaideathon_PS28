@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Routine Slot</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: url("/static/pic.jpeg") no-repeat center center/cover;
+            padding: 40px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px auto;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        h3 { text-align: center; color: #007BFF; }
+        label { font-weight: bold; }
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover { background: #218838; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3>✏️ Edit Period</h3>
+        <form method="POST">
+            <p><b>Day:</b> {{ slot.day }} | <b>Period:</b> {{ slot.period }}</p>
+            <label for="subject_id">Change Subject</label>
+            <select name="subject_id" id="subject_id" required>
+                {% for subj in subjects %}
+                    <option value="{{ subj.id }}" {% if subj.id == slot.subject_id %}selected{% endif %}>
+                        {{ subj.name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit">✅ Save</button>
+        </form>
+    </div>
+</body>
+</html>

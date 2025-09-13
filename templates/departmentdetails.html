@@ -60,18 +60,32 @@
             margin: 20px 0 30px;
         }
 
-        .add-department a {
-            background: #28a745;
-            color: white;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-decoration: none;
-            transition: background 0.2s;
+        .add-department form {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
-        .add-department a:hover {
-            background: #218838;
+        .add-department input {
+            padding: 6px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 160px;
+        }
+
+        .add-department button {
+            padding: 6px 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .add-department button:hover {
+            background-color: #218838;
         }
 
         .departments-container {
@@ -100,6 +114,7 @@
             color: #007BFF;
             margin-bottom: 10px;
         }
+
         .subject-container {
             display: flex;
             flex-direction: column;
@@ -115,25 +130,22 @@
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.08);
         }
-
-
     </style>
 </head>
 <body>
     <h2>Welcome Dean!!</h2>
-<
+
     <!-- Navigation -->
     <nav>
         <a href="/deandashboard/{{dean.id}}">Home</a>
         <a href="/departmentdetails/{{dean.id}}">Department</a>
         <a href="/showfaculty/{{dean.id}}">Faculty</a>
-        <a href="/routine/{{dean.id}}"> Routines</a>
+        <a href="/routine/{{dean.id}}">Routines</a>
         <a href="/message/{{dean.id}}">Messages</a>
         <a href="/deansummary/{{ dean.id }}">Summary</a>
         <a href="/teditprofile/{{dean.id}}">Edit Profile</a>
         <a href="/logout">Logout</a>
     </nav>
-
 
     {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -145,46 +157,58 @@
         {% endif %}
     {% endwith %}
 
-
+    <!-- Add Department -->
     <div class="add-department">
-        <form action="/adddepartment" method="POST" style="display: inline;">
-            <input type="text" name="dep_name" placeholder="Enter department name" required
-                style="padding: 5px; width: 160px; border-radius: 5px; border: 1px solid #ccc;">
-            <button type="submit" style="padding: 6px 12px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Add</button>
+        <form action="/adddepartment" method="POST">
+            <input type="text" name="dep_name" placeholder="Department Name" required>
+            <input type="number" name="section_count" placeholder="Sections" min="1" required>
+            <input type="number" name="student_count" placeholder="Students" min="10" required>
+            <input type="number" name="capacity" placeholder="Capacity" min="10" required>
+            <button type="submit">+ Add Department</button>
         </form>
     </div>
 
-    </div>
+    <!-- Departments -->
     <div class="departments-container">
-        {% for department in departments %}
-            <div class="department-card">
-                <h3>🏫 {{ department.name }}</h3>
+    {% for department in departments %}
+        <div class="department-card">
+            <h3>🏫 {{ department.name }}</h3>
 
-                <div class="subject-container">
-                    <!-- Regular subjects -->
-                    {% for subject in department.subjects %}
-                    <div class="subject-item">
-                        🎓 {{ subject.name }}
-                    </div>
-                    {% endfor %}
-
-                    <!-- Extra subjects -->
-                    {% for extra in department.extra_subjects %}
-                    <div class="subject-item" style="background: #fff8dc; color: #b8860b;">
-                        🌟 {{ extra.name }}
-                    </div>
-                    {% endfor %}
-
-                    <!-- Add subject form -->
-                    <div class="add-department">
-                        <form action="/addsubject/{{ department.id }}" method="POST">
-                            <input type="text" name="subject_name" placeholder="Enter subject name" required>
-                            <button type="submit">+ Add Subject</button>
-                        </form>
-                    </div>
+            <div class="subject-container">
+                <!-- Regular subjects -->
+                {% for subject in department.subjects %}
+                <div class="subject-item">
+                    🎓 {{ subject.name }}
                 </div>
+                {% endfor %}
+
+                <!-- Extra subjects -->
+                {% for extra in department.extra_subjects %}
+                <div class="subject-item" style="background: #fff8dc; color: #b8860b;">
+                    🌟 {{ extra.name }}
+                </div>
+                {% endfor %}
+
+                <!-- Add subject form -->
+                <div class="add-department">
+                    <form action="/addsubject/{{ department.id }}" method="POST">
+                        <input type="text" name="subject_name" placeholder="Enter subject name" required>
+                        <button type="submit">+ Add Subject</button>
+                    </form>
+                </div>
+
+                <!-- Add extra subject form -->
+                <div class="add-department">
+                    <form action="/addextrasubject/{{ department.id }}" method="POST">
+                        <input type="text" name="extra_subject_name" placeholder="Enter extra subject" required>
+                        <button type="submit">+ Add Extra Subject</button>
+                    </form>
+                </div>
+
             </div>
-        {% endfor %}
-    </div>
+        </div>
+    {% endfor %}
+</div>
+
 </body>
 </html>
