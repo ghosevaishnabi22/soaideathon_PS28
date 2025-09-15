@@ -2,7 +2,6 @@ SMART TIMETABLE SCHEDULER
 ---
 About The Project:
 
-This project is made by Vaishnabi Ghose, for the Modern Application Development 1 course project.
 
 The main theme of this project is to build a multi-user Smart Timetable Scheduler which supports three roles: Admin/Dean, Teacher, and Student. Each user has specific functionalities, and a superuser (Admin/Dean) gets automatically added whenever a new database is created.
 
@@ -76,7 +75,4 @@ How to Run:
 6. Run the Application:
    python app.py
 
-Project Link:
---------------
 
-Smart Timetable Scheduler – GitHub Repository: https://github.com/ghosevaishnabi22/soaideathon_PS28
