@@ -65,9 +65,15 @@
         /* Charts Grid */
         .charts-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 30px;
             margin-top: 20px;
+        }
+        
+        .charts-container.third-chart {
+            grid-template-columns: 1fr;
+            justify-items: center;
+            margin-top: 30px;
         }
 
         .chart-box {
@@ -75,6 +81,11 @@
             border-radius: 12px;
             padding: 16px;
             box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        .chart-box.center-chart {
+            justify-self: center;
+            max-width: 500px;
         }
 
         .chart-box h3 {
@@ -93,7 +104,6 @@
 
     <h1>📊 Dean Summary for {{ dean.name }}</h1>
 
-    <!-- Navigation -->
     <nav>
         <a href="/deandashboard/{{dean.id}}">Home</a>
         <a href="/departmentdetails/{{dean.id}}">Department</a>
@@ -105,36 +115,28 @@
         <a href="/logout">Logout</a>
     </nav>
 
-    <!-- Charts -->
     <div class="card">
         <h2>Academic & Faculty Insights</h2>
+        
         <div class="charts-container">
-
-            <!-- Faculty Load Distribution -->
             <div class="chart-box">
                 <h3>👩‍🏫 Faculty Load Distribution</h3>
                 <img src="{{ url_for('static', filename='faculty_load.png') }}" alt="Faculty Load Distribution">
             </div>
 
-            <!-- Routine Utilization -->
-            <div class="chart-box">
-                <h3>📅 Routine Utilization</h3>
-                <img src="{{ url_for('static', filename='routine_utilization.png') }}" alt="Routine Utilization">
-            </div>
-
-            <!-- Course Allocation -->
             <div class="chart-box">
                 <h3>📘 Course Allocation Summary</h3>
                 <img src="{{ url_for('static', filename='course_allocation.png') }}" alt="Course Allocation">
             </div>
-
-            <!-- Faculty by Department -->
-            <div class="chart-box">
+        </div>
+        
+        <div class="charts-container third-chart">
+            <div class="chart-box center-chart">
                 <h3>🏫 Faculty by Department</h3>
                 <img src="{{ url_for('static', filename='faculty_by_dept.png') }}" alt="Faculty by Department">
             </div>
-
         </div>
+
     </div>
 
 </body>

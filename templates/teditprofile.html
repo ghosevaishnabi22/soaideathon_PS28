@@ -133,27 +133,22 @@
         <form method="POST" action="/teditprofile/{{ teacher.id }}">
             <div>
                 <label for="name">Full Name</label>
-                <input type="text" name="name" id="name" value="{{ teacher.name }}" required>
+                <input type="text" name="name" id="name" value="{{ teacher.user.name }}" required>
             </div>
 
             <div>
                 <label for="email">Email (cannot be changed)</label>
-                <input type="email" name="email" id="email" value="{{ teacher.email }}" readonly>
+                <input type="email" name="email" id="email" value="{{ teacher.user.email }}" readonly>
             </div>
 
             <div>
                 <label for="phone">Phone</label>
-                <input type="text" name="phone" id="phone" value="{{ teacher.phone }}" required>
+                <input type="text" name="phone" id="phone" value="{{ teacher.user.phone }}" required>
             </div>
 
             <div>
                 <label for="address">Address</label>
-                <input type="text" name="address" id="address" value="{{ teacher.address }}" required>
-            </div>
-
-            <div>
-                <label for="password">Password</label>
-                <input type="password" name="password" id="password" value="{{ teacher.password }}" required>
+                <input type="text" name="address" id="address" value="{{ teacher.user.address }}" required>
             </div>
 
             <button type="submit">✅ Save Changes</button>

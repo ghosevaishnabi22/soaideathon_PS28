@@ -1,198 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Teacher Dashboard</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: url("/static/pic.jpeg") no-repeat center center/cover;
-      margin: 0;
-      padding: 40px 20px;
-    }
+    <meta charset="UTF-8">
+    <title>{{ teacher.user.name }}'s Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: url("/static/pic.jpeg") no-repeat center center/cover;
+            padding: 30px;
+        }
+        h2 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        nav {
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+          margin-bottom: 30px;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.9);
+          border-radius: 8px;
+          box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
 
-    h2 {
-      color: #fff;
-      font-size: 34px;
-      margin-bottom: 30px;
-      text-shadow: 0 5px 5px rgba(0,0,0,0.5);
-      text-align: center;
-    }
+        nav a {
+          color: rgb(17, 17, 17);
+          text-decoration: none;
+          font-weight: bold;
+          padding: 8px 14px;
+          border-radius: 6px;
+          transition: background 0.2s;
+        }
 
-    nav {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      margin-bottom: 30px;
-      padding: 12px;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 8px;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-    }
+        nav a:hover {
+          color: #fff;
+          background: #0056b3;
+        }
 
-    nav a {
-      color: rgb(17, 17, 17);
-      text-decoration: none;
-      font-weight: bold;
-      padding: 8px 14px;
-      border-radius: 6px;
-      transition: background 0.2s;
-    }
+        h3 {
+            text-align: center;
+            margin-top: 40px;
+            color: #102235;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255,255,255,0.95);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background: #007BFF;
+            color: white;
+        }
+        td {
+            font-size: 14px;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .reassignment-log {
+            text-align: center;
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .reassignment-log p {
+            margin: 5px 0;
+        }
+        a.back {
+            display: inline-block;
+            margin: 20px auto;
+            padding: 10px 16px;
+            background: #007BFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+        }
+        
+      button.danger {
+        padding: 6px 10px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        background: #e74c3c;
+        color: #fff;
+        margin-top: 5px;
+      }
 
-    nav a:hover {
-      color: #fff;
-      background: #0056b3;
-    }
-
-    .card {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 12px;
-      padding: 24px;
-      margin: 20px auto;
-      width: 95%;
-      max-width: 1200px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    .card h3 {
-      margin-bottom: 16px;
-      color: #007BFF;
-      text-align: center;
-    }
-
-    .routine-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-
-    .routine-table th, .routine-table td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      text-align: center;
-      vertical-align: middle;
-    }
-
-    .routine-table th {
-      background: #007BFF;
-      color: #fff;
-    }
-
-    .slot.absent {
-      background: #ffe6e6;
-      border-left: 4px solid #e74c3c;
-    }
-
-    .slot.normal {
-      background: #f9f9f9;
-    }
-
-    button.danger {
-      padding: 6px 10px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      background: #e74c3c;
-      color: #fff;
-      margin-top: 5px;
-    }
-
-    button.danger:hover {
-      background: #c0392b;
-    }
-
-    .slot-log {
-      background: #fff;
-      border-left: 5px solid #007BFF;
-      padding: 10px;
-      border-radius: 8px;
-      margin: 8px 0;
-    }
-  </style>
+      button.danger:hover {
+        background: #c0392b;
+      }
+      
+      button.success {
+        padding: 6px 10px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        background: #28a745;
+        color: #fff;
+        margin-top: 5px;
+      }
+      button.success:hover {
+        background: #218838;
+      }
+    </style>
 </head>
 <body>
+    <h2>👨‍🏫 {{ teacher.user.name }}'s Dashboard</h2>
+        
 
-<h2>Welcome, {{ teacher.name }}</h2>
+    <nav>
+      <a href="/teacherdashboard/{{ teacher.id }}">Home</a>
+      <a href="/teditprofile/{{ teacher.id }}">Edit Profile</a>
+      <a href="/logout">Logout</a>
+    </nav>
 
-<!-- Navigation -->
-<nav>
-  <a href="/teacherdashboard/{{ teacher.id }}">Home</a>
-  <a href="/teditprofile/{{ teacher.id }}">Edit Profile</a>
-  <a href="/logout">Logout</a>
-</nav>
-
-<!-- Flash Messages -->
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
-      {% for message in messages %}
-        <p>{{ message }}</p>
-      {% endfor %}
-    </div>
-  {% endif %}
-{% endwith %}
-
-<!-- Accepted Routine -->
-<div class="card">
-  <h3>📅 Your Accepted Routine</h3>
-  {% set accepted = routines | selectattr("finalized", "equalto", True) | sort(attribute="version") | list %}
-  {% if accepted %}
-    {% set latest = accepted[-1] %}
-    <p style="text-align:center;"><strong>Routine Version {{ latest.version }}</strong> (Accepted ✅)</p>
-
-    <table class="routine-table">
-      <thead>
-        <tr>
-          <th>Day</th>
-          {% for p in range(1, 11) %}
-            <th>Period {{ p }}</th>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
+          {% for message in messages %}
+            <p>{{ message }}</p>
           {% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for d in ['Mon','Tue','Wed','Thu','Fri','Sat'] %}
-        <tr>
-          <th>{{ d }}</th>
-          {% for p in range(1, 11) %}
-            {% set slot = (slots | selectattr("routine_id","equalto",latest.id) | selectattr("day","equalto",d) | selectattr("period","equalto",p) | list).0 %}
-            <td class="{% if slot and slot.absent %}slot absent{% else %}slot normal{% endif %}">
-              {% if slot %}
-                {{ slot.subject.name }}
-                <form method="POST" action="{{ url_for('mark_absent') }}">
-                  <input type="hidden" name="slot_id" value="{{ slot.id }}">
-                  <input type="hidden" name="teacher_id" value="{{ teacher.id }}">
-                  <button type="submit" class="danger">Mark Leave</button>
-                </form>
-              {% else %}
-                -
-              {% endif %}
-            </td>
-          {% endfor %}
-        </tr>
-        {% endfor %}
-      </tbody>
+        </div>
+      {% endif %}
+    {% endwith %}
+
+
+    {% for batch_name, routine_table in routine_by_batch.items() %}
+    <h3>{{ batch_name }} Routine</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Day</th>
+                {% for period in range(1, 6) %}
+                <th>Period {{ period }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for day in days %}
+            <tr>
+                <td><b>{{ day }}</b></td>
+                {% for period in range(1, 6) %}
+                    {% set slots_for_period = routine_table[day].get(period, []) %}
+                    <td>
+                        {% if slots_for_period %}
+                            {% for slot_data in slots_for_period %}
+                                <b>{{ slot_data.subject }}</b><br>
+                                {{ slot_data.section }}<br>
+                                {{ slot_data.classroom }}<br>
+                                ⏰ {{ slot_data.time_range }}
+                                
+                                {% if slot_data.is_reassigned_from_me %}
+                                    <form method="POST" action="{{ url_for('reassign_to_original') }}">
+                                        <input type="hidden" name="slot_id" value="{{ slot_data.id }}">
+                                        <input type="hidden" name="teacher_id" value="{{ teacher.id }}">
+                                        <button type="submit" class="success">Reassign</button>
+                                    </form>
+                                {% elif slot_data.is_reassigned_to_me %}
+                                    <form method="POST" action="{{ url_for('mark_absent') }}">
+                                        <input type="hidden" name="slot_id" value="{{ slot_data.id }}">
+                                        <input type="hidden" name="teacher_id" value="{{ teacher.id }}">
+                                        <button type="submit" class="danger">Mark Leave</button>
+                                    </form>
+                                {% else %}
+                                    <form method="POST" action="{{ url_for('mark_absent') }}">
+                                        <input type="hidden" name="slot_id" value="{{ slot_data.id }}">
+                                        <input type="hidden" name="teacher_id" value="{{ teacher.id }}">
+                                        <button type="submit" class="danger">Mark Leave</button>
+                                    </form>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
-  {% else %}
-    <p style="text-align:center;">No accepted routine yet.</p>
-  {% endif %}
-</div>
+    {% endfor %}
 
-<!-- Reassignment Log -->
-<div class="card">
-  <h3>📖 Reassignment Log</h3>
-  {% for log in logs %}
-    <div class="slot-log">
-      <p>
-        {{ log.slot.day }} Period {{ log.slot.period }} – {{ log.slot.subject.name }}
-        reassigned from <b>{{ log.from_teacher.name }}</b> to <b>{{ log.to_teacher.name }}</b>
-        on {{ log.timestamp }}
-      </p>
+    <h3>📋 Reassignments</h3>
+    <div class="reassignment-log">
+        {% if reassignments %}
+            {% for log in reassignments %}
+                <p>
+                    Slot: {{ log.slot.subject.name if log.slot.subject else 'N/A' }} 
+                    from {{ log.from_teacher.user.name }} 
+                    to {{ log.to_teacher.user.name }} on 
+                    {{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+            {% endfor %}
+        {% else %}
+            <p>No reassignments found.</p>
+        {% endif %}
     </div>
-  {% else %}
-    <p>No reassignments yet.</p>
-  {% endfor %}
-</div>
+
+    <div style="text-align:center;">
+        <a class="back" href="/">⬅ Back to Home</a>
+    </div>
 
 </body>
 </html>

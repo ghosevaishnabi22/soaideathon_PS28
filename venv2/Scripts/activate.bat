@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\ghose\Desktop\VEHICLE PARKEASE_23f3001025\venv2
+set VIRTUAL_ENV=F:\doIturself\venv2
 
 if not defined PROMPT set PROMPT=$P$G
 

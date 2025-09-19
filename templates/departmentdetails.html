@@ -67,7 +67,8 @@
             flex-wrap: wrap;
         }
 
-        .add-department input {
+        .add-department input, 
+        .add-department select {
             padding: 6px;
             border-radius: 5px;
             border: 1px solid #ccc;
@@ -90,35 +91,46 @@
 
         .departments-container {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); 
+            grid-template-columns: repeat(2, 1fr); /* always 3 columns */
             gap: 20px;
-            justify-items: center;
+            justify-items: stretch;
         }
+
 
         .department-card {
             background-color: #fff;
             width: 100%;
             border-radius: 12px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-            padding: 24px;
+            padding: 20px;
             box-sizing: border-box;
             transition: transform 0.2s;
-            text-align: center;
         }
 
         .department-card:hover {
             transform: translateY(-3px);
         }
 
-        .department-card h3 {
+        .dept-header {
+            font-size: 20px;
+            font-weight: bold;
             color: #007BFF;
-            margin-bottom: 10px;
+            margin: 0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dept-body {
+            display: none;
+            margin-top: 15px;
         }
 
         .subject-container {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             margin-top: 12px;
         }
 
@@ -129,11 +141,30 @@
             color: #0056b3;
             font-weight: bold;
             box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            text-align: left;
+        }
+
+        .subject-item.extra {
+            background: #fff8dc;
+            color: #b8860b;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background: #b02a37;
         }
     </style>
 </head>
 <body>
-    <h2>Welcome Dean!!</h2>
+    <h2>Welcome {{ dean.user.name }}!!</h2>
 
     <!-- Navigation -->
     <nav>
@@ -161,9 +192,8 @@
     <div class="add-department">
         <form action="/adddepartment" method="POST">
             <input type="text" name="dep_name" placeholder="Department Name" required>
-            <input type="number" name="section_count" placeholder="Sections" min="1" required>
-            <input type="number" name="student_count" placeholder="Students" min="10" required>
-            <input type="number" name="capacity" placeholder="Capacity" min="10" required>
+            <input type="number" name="student_count" placeholder="Total Students" min="10" required>
+            <input type="number" name="capacity" placeholder="Classroom Capacity" min="10" required>
             <button type="submit">+ Add Department</button>
         </form>
     </div>
@@ -172,27 +202,46 @@
     <div class="departments-container">
     {% for department in departments %}
         <div class="department-card">
-            <h3>🏫 {{ department.name }}</h3>
+            <h3 class="dept-header" onclick="toggleDept('dept-{{ department.id }}')">
+                🏫 {{ department.name }}
+                <form action="/deletedepartment/{{ department.id }}" method="POST" 
+                      onsubmit="return confirm('Are you sure you want to delete {{ department.name }}?');" style="margin:0;">
+                    <button type="submit" class="delete-btn">🗑</button>
+                </form>
+            </h3>
 
-            <div class="subject-container">
-                <!-- Regular subjects -->
-                {% for subject in department.subjects %}
-                <div class="subject-item">
-                    🎓 {{ subject.name }}
-                </div>
-                {% endfor %}
+            <div id="dept-{{ department.id }}" class="dept-body">
+                <div class="subject-container">
+                    <!-- Regular subjects -->
+                    {% for subject in department.subjects %}
+                    <div class="subject-item">
+                        🎓 {{ subject.name }} 
+                        ({{ subject.credits }} Credits)
+                    </div>
+                    {% endfor %}
 
-                <!-- Extra subjects -->
-                {% for extra in department.extra_subjects %}
-                <div class="subject-item" style="background: #fff8dc; color: #b8860b;">
-                    🌟 {{ extra.name }}
+                    <!-- Extra subjects -->
+                    {% for extra in department.extra_subjects %}
+                    <div class="subject-item extra">
+                        🌟 {{ extra.name }} 
+                        ({{ extra.credits }} Credits)
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
 
                 <!-- Add subject form -->
                 <div class="add-department">
                     <form action="/addsubject/{{ department.id }}" method="POST">
                         <input type="text" name="subject_name" placeholder="Enter subject name" required>
+                        <select name="credits" id="credits-{{ department.id }}" required onchange="updateOptions(this)">
+                            <option value="" disabled selected>Select Credits</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+                        <select name="distribution_type" id="type-{{ department.id }}" required>
+                            <option value="" disabled selected>Select Type</option>
+                        </select>
                         <button type="submit">+ Add Subject</button>
                     </form>
                 </div>
@@ -201,14 +250,68 @@
                 <div class="add-department">
                     <form action="/addextrasubject/{{ department.id }}" method="POST">
                         <input type="text" name="extra_subject_name" placeholder="Enter extra subject" required>
+                        <select name="credits" id="extra-credits-{{ department.id }}" required onchange="updateOptions(this)">
+                            <option value="" disabled selected>Select Credits</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                        </select>
+                        <select name="distribution_type" id="extra-type-{{ department.id }}" required>
+                            <option value="" disabled selected>Select Type</option>
+                        </select>
                         <button type="submit">+ Add Extra Subject</button>
                     </form>
                 </div>
-
             </div>
         </div>
     {% endfor %}
-</div>
+    </div>
+
+<script>
+function toggleDept(id) {
+    const body = document.getElementById(id);
+    body.style.display = (body.style.display === "none" || body.style.display === "") 
+        ? "block" : "none";
+}
+
+function updateOptions(selectElement) {
+    let credits = selectElement.value;
+    let typeSelectId = selectElement.id.includes("extra") 
+                        ? selectElement.id.replace("extra-credits", "extra-type")
+                        : selectElement.id.replace("credits", "type");
+    
+    let typeSelect = document.getElementById(typeSelectId);
+    typeSelect.innerHTML = ""; 
+
+    let options = [];
+    if (credits == "2") {
+        options = [
+            {val: "theory", text: "Theory (2L-0P)"},
+            {val: "lab", text: "Lab (0L-2P)"},
+            {val: "mixed", text: "Mixed (1L-1P)"}
+        ];
+    } else if (credits == "3") {
+        options = [
+            {val: "theory", text: "Theory (3L-0P)"},
+            {val: "mixed", text: "Mixed (2L-2P)"}
+        ];
+    } else if (credits == "4") {
+        options = [
+            {val: "theory", text: "Theory (4L-0P)"},
+            {val: "lab", text: "Lab (0L-8P)"},
+            {val: "mixed", text: "Mixed (3L-2P)"}
+        ];
+    }
+
+
+    options.forEach(opt => {
+        let option = document.createElement("option");
+        option.value = opt.val;
+        option.textContent = opt.text;
+        typeSelect.appendChild(option);
+    });
+}
+</script>
 
 </body>
 </html>

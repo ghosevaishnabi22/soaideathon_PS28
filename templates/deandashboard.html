@@ -123,7 +123,7 @@
 
         .batch:hover {
             background: #007BFF;
-            color: #fff;
+            color: #1a1919;
         }
 
         .batch.morning {
@@ -144,7 +144,7 @@
     </style>
 </head>
 <body>
-    <h2>Welcome {{ dean.name }}!!</h2>
+    <h2>Welcome {{ dean.user.name }}!!</h2>
 
     <!-- Navigation -->
     <nav>
@@ -177,28 +177,59 @@
 
     <!-- Classroom Cards -->
     <div class="classrooms-container">
-      {% for classroom in classrooms %}
+    {% for classroom in classrooms %}
         <div class="class-card">
-          <h3>🏫 {{ classroom.name }}</h3>
-          <p>Capacity: <b>{{ classroom.capacity }}</b></p>
-          <p>Department: <b>{{ classroom.department.name }}</b></p>
-          <div class="batch-container">
-            {% set sorted_batches = classroom.batches|sort(attribute="id") %}
-            {% for batch in sorted_batches %}
-              <div class="batch {% if 'Morning' in batch.name %}morning{% elif 'Evening' in batch.name %}evening{% endif %}">
-                <a href="/show_routine/{{ batch.section.id }}">
-                  {% if 'Morning' in batch.name %}🌅 Morning
-                  {% elif 'Evening' in batch.name %}🌙 Evening
-                  {% else %}🎓 Batch{% endif %}
-                  <br> ({{ batch.section.name }})
-                </a>
-              </div>
-            {% else %}
-              <p style="color:gray;">No batches assigned</p>
-            {% endfor %}
-          </div>
+            <h3>🏫 {{ classroom.name }}</h3>
+            <p>Capacity: <b>{{ classroom.capacity }}</b></p>
+            <p>Department: <b>{{ classroom.department.name }}</b></p>
+            <div class="batch-container">
+                {% set sorted_batches = classroom.batches|sort(attribute="id") %}
+                {% for batch in sorted_batches %}
+                    <div class="batch {% if 'Morning' in batch.name %}morning{% elif 'Evening' in batch.name %}evening{% endif %}">
+                        {% if batch.sections %}
+                            {# ✅ Show only the first section linked to this batch #}
+                            {% set section = batch.sections[0] %}
+                            <a href="/show_routine/{{ section.id }}/{{ batch.id }}">
+                                {% if 'Morning' in batch.name %}🌅 Morning
+                                {% elif 'Evening' in batch.name %}🌙 Evening
+                                {% else %}🎓 Batch{% endif %}
+                                - Section {{ section.name }}
+                            </a>
+                        {% else %}
+                            {# ✅ Only one "No sections allocated" #}
+                            <p style="color: gray; font-size: 0.9em;">No sections allocated</p>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p style="color:gray;">No batches assigned</p>
+                {% endfor %}
+            </div>
         </div>
-      {% endfor %}
+    {% endfor %}
     </div>
+
+    <!-- Labs Section -->
+    {% if labs %}
+    <h2 style="margin-top:40px; color:#fff; text-align:center;">🔬 Laboratories</h2>
+    <div class="classrooms-container">
+        {% for lab in labs %}
+        <div class="class-card">
+            <h3>🔬 {{ lab.name }}</h3>
+            <p>Capacity: <b>{{ lab.capacity }}</b></p>
+            <p>Department: <b>{{ lab.department.name }}</b></p>
+            
+            <div class="batch-container">
+                <!-- ✅ Add "View Routine" button here -->
+                <a href="/show_labroutine/{{ lab.id }}" 
+                style="display:inline-block; margin-top:10px; padding:8px 14px; 
+                        background:#28a745; color:white; border-radius:6px; text-decoration:none;">
+                    📅 View Routine
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
 </body>
 </html>

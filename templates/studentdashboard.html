@@ -87,7 +87,7 @@
 </head>
 <body>
 
-<h2>Welcome, {{ student.name }}</h2>
+<h2>Welcome, {{ student.user.name }}</h2>
 
 <nav>
   <a href="/studentdashboard/{{ student.id }}">Home</a>
@@ -95,7 +95,6 @@
   <a href="/logout">Logout</a>
 </nav>
 
-<!-- Flash Messages -->
 {% with messages = get_flashed_messages() %}
   {% if messages %}
     <div style="text-align: center; color: #d9534f; background-color: #f2dede; padding: 10px 0; margin-bottom: 20px;">
@@ -106,7 +105,6 @@
   {% endif %}
 {% endwith %}
 
-<!-- SECTION TIMETABLE -->
 <div class="card">
   <h3>📅 Section Timetable ({{ student.section.name }})</h3>
   {% if slots %}
@@ -129,8 +127,13 @@
               {% set slot = slots | selectattr("day", "equalto", day) | selectattr("period", "equalto", p) | first %}
               <td>
                 {% if slot %}
-                  {{ slot.subject.name }}
-                  {% if slot.teacher %}<br><small>({{ slot.teacher.name }})</small>{% endif %}
+                  {{ slot.subject.name }} <br>
+                  {% if slot.teacher %}
+                    <small>({{ slot.teacher.user.name }})</small><br>
+                  {% endif %}
+                  {% if slot.time_range %}
+                    <small>{{ slot.time_range }}</small>
+                  {% endif %}
                 {% else %}
                   –
                 {% endif %}
@@ -145,7 +148,6 @@
   {% endif %}
 </div>
 
-<!-- PERSONALIZED STUDENT ROUTINE -->
 <div class="card">
   <h3>📅 Your Personalized Routine</h3>
   {% if personalized_slots %}
@@ -169,6 +171,9 @@
                 {% if slot %}
                   {{ slot.subject_name }}
                   {% if slot.teacher_name %}<br><small>({{ slot.teacher_name }})</small>{% endif %}
+                  {% if slot.time_range %}
+                    <br><small>{{ slot.time_range }}</small>
+                  {% endif %}
                 {% else %}
                   Free
                 {% endif %}
@@ -179,11 +184,10 @@
       </tbody>
     </table>
   {% else %}
-    <p>No extra subjects scheduled yet.</p>
+    <p>No routine assigned yet. Once a section routine is set, your personalized routine will appear here.</p>
   {% endif %}
 </div>
 
-<!-- EXTRA SUBJECT SELECTION WITH TIME -->
 <div class="card">
   <h3>📘 Choose Extra Subjects & Preferred Time</h3>
   <form method="POST">
@@ -209,7 +213,6 @@
   </form>
 </div>
 
-<!-- EXTRA SUBJECTS LIST -->
 <div class="card">
   <h3>🎉 Your Extra Subjects — Pick ’em in your chill time & level up! 🚀</h3>
   {% if chosen_extra_subjects %}

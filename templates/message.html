@@ -108,8 +108,8 @@
         <div class="log">
           <p>
             <strong>{{ log.slot.day }} Period {{ log.slot.period }}</strong> – {{ log.slot.subject.name }}<br>
-            Reassigned from <strong>{{ log.from_teacher.name }}</strong> 
-            to <strong>{{ log.to_teacher.name }}</strong> 
+            Reassigned from <strong>{{ log.from_teacher.user.name }}</strong> 
+            to <strong>{{ log.to_teacher.user.name }}</strong> 
             on {{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}
           </p>
         </div>

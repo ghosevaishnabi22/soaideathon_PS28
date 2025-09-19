@@ -212,15 +212,31 @@
                     <th>Faculty Name</th>
                     <th>Email</th>
                     <th>Department</th>
+                    <th>Subject</th>
+                    <th>Extra Subject</th>
                 </tr>
             </thead>
             <tbody>
                 {% for teacher in teachers %}
                 <tr>
                     <td>{{ teacher.id }}</td>
-                    <td>{{ teacher.name }}</td>
-                    <td>{{ teacher.email }}</td>
+                    <td>{{ teacher.user.name }}</td>
+                    <td>{{ teacher.user.email }}</td>
                     <td>{{ teacher.department.name if teacher.department else 'N/A' }}</td>
+                    <td>
+                        {% for sub in teacher.subjects %}
+                            {{ sub.name }} ({{ sub.credits }} credits)<br>
+                        {% else %}
+                            N/A
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for tes in teacher.extra_subject_links %}
+                            {{ tes.extra_subject.name }} ({{ tes.extra_subject.credits }} credits){% if not loop.last %}, {% endif %}<br>
+                        {% else %}
+                            N/A
+                        {% endfor %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
