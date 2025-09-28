@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ lab.name }} Routine</title>
+    <style>
+         body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* This shorthand property sets the image, position, repeat, and size */
+    background: url("/static/time2.jpg") no-repeat center center;
+    
+    /* This fixes the background image relative to the viewport */
+    background-attachment: fixed;
+    
+    /* This ensures the background covers the entire viewport */
+    background-size: cover;
+    
+    /* Ensures the body takes up at least the full height of the screen */
+    min-height: 100vh; 
+    
+    margin: 0;
+    padding: 40px 20px;
+        }
+
+        h1, h2 {
+            color: #001f3f;
+            font-size: 34px;
+            margin-bottom: 30px;
+            text-shadow: 0 5px 15px rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+
+        h3 {
+            color: #042a50;
+            font-size: 25px;
+            margin-bottom: 30px;
+            text-shadow: 0 5px 5px rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255,255,255,0.95);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 40px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background: #001e55;
+            color: white;
+             font-size: 14px;
+        }
+        td {
+            font-size: 14px;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        a.back {
+            display: inline-block;
+            margin: 20px auto;
+            padding: 10px 16px;
+            background: #002349;
+            color: white;
+            text-decoration: none;
+            border-radius: 14px;
+             font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h2><b>🔬 {{ lab.name }} Routine</b></h2>
+
+    <!-- Morning Batch -->
+    <h3><b>🌅 Morning Batch</b></h3>
+    <table>
+        <tr>
+            <th>Day</th>
+            {% for period in range(1,6) %}
+                <th>Period {{ period }}</th>
+            {% endfor %}
+        </tr>
+        {% for day in days %}
+        <tr>
+            <td><b>{{ day }}</b></td>
+            {% for period in range(1,6) %}
+                {% set slot = morning_routine_table[day].get(period) %}
+                <td>
+                    {% if slot %}
+                        <b>{{ slot.subject }}</b><br>
+                        👨‍🏫 {{ slot.teacher }}<br>
+                        ⏰ {{ slot.time_range }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Evening Batch -->
+    <h3><b>🌙 Evening Batch</b></h3>
+    <table>
+        <tr>
+            <th>Day</th>
+            {% for period in range(1,6) %}
+                <th>Period {{ period }}</th>
+            {% endfor %}
+        </tr>
+        {% for day in days %}
+        <tr>
+            <td><b>{{ day }}</b></td>
+            {% for period in range(1,6) %}
+                {% set slot = evening_routine_table[day].get(period) %}
+                <td>
+                    {% if slot %}
+                        <b>{{ slot.subject }}</b><br>
+                        👨‍🏫 {{ slot.teacher }}<br>
+                        ⏰ {{ slot.time_range }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div style="text-align:center;">
+        <a class="back" href="/deandashboard/{{ dean.id }}">⬅ Back</a>
+    </div>
+</body>
+</html>

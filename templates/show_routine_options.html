@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Routine Options</title>
+    <style>
+         body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* This shorthand property sets the image, position, repeat, and size */
+    background: url("/static/time2.jpg") no-repeat center center;
+    
+    /* This fixes the background image relative to the viewport */
+    background-attachment: fixed;
+    
+    /* This ensures the background covers the entire viewport */
+    background-size: cover;
+    
+    /* Ensures the body takes up at least the full height of the screen */
+    min-height: 100vh; 
+    
+    margin: 0;
+    padding: 40px 20px;
+        }
+
+        h1, h2 {
+            color: #001f3f;
+            font-size: 34px;
+            margin-bottom: 30px;
+            text-shadow: 0 5px 15px rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+
+
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        nav a {
+            color: rgb(17, 17, 17);
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 14px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        nav a:hover {
+            color: #fff;
+            background: #002955;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 0;
+            margin: 20px auto;
+            width: 95%;
+            max-width: 1300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            font-weight: bold;
+            color: #fff;
+            background: #001f3f;
+            padding: 12px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .card-select {
+            padding: 12px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .card-select label {
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        input[type="radio"] {
+            transform: scale(1.2);
+            accent-color: #001f3f;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+            font-size: 14px;
+            word-wrap: break-word;
+        }
+
+        th {
+            background: #f8f9fa;
+        }
+
+        .subject-type {
+            display: block;
+            font-size: 12px;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        .select-btn {
+            margin-top: 20px;
+            padding: 10px 18px;
+            background: #001f3f;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .select-btn:hover {
+            background: #17af21;
+        }
+
+        .diagnostics {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.9);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+
+        .diagnostics h3 {
+            margin-top: 0;
+            color: #be0606;
+            font-size: 20px;
+        }
+
+        .diagnostics ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .card-select input[type="radio"] {
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .card-select label {
+            cursor: pointer;
+        }
+        td:empty {
+            background: #fdfdfd;
+        }
+    </style>
+</head>
+<body>
+    <h2>📑 Routine Options for Section: {{ section.name }}</h2>
+
+    <nav>
+        <a href="/deandashboard/{{dean.id}}">Home</a>
+        <a href="/departmentdetails/{{dean.id}}">Department</a>
+        <a href="/showfaculty/{{dean.id}}">Faculty</a>
+        <a href="/routine/{{dean.id}}">Routines</a>
+        <a href="/message/{{dean.id}}">Messages</a>
+        <a href="/deansummary/{{ dean.id }}">Summary</a>
+        <a href="/teditprofile/{{dean.id}}">Edit Profile</a>
+        <a href="/logout">Logout</a>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div style="text-align: center; color: #be0606; background-color: #f2dede; padding: 10px; margin-bottom: 20px;">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% set days = ['Mon','Tue','Wed','Thu','Fri'] %}
+
+    <form method="POST" action="/save_selected_routine/{{ section.id }}">
+        {% if options %}
+            {% for routine in options %}
+            <div class="card">
+                <div class="card-header">
+                    Routine Option {{ loop.index }}
+                </div>
+                <div class="card-select">
+                    <input type="radio" id="routine_{{ routine.id }}" name="selected_routine" value="{{ routine.id }}" required>
+                    <label for="routine_{{ routine.id }}">
+                        Select this routine
+                    </label>
+                </div>
+
+                <div class="card-body" style="padding: 20px;">
+                    <div class="table-responsive">
+                        {% if section.batch and section.batch.name.lower() == "morning" %}
+                            {% set periods = [
+                                "08:00 - 08:55",
+                                "09:00 - 09:55",
+                                "10:00 - 10:55",
+                                "11:00 - 11:55",
+                                "12:00 - 12:55"
+                            ] %}
+                        {% else %}
+                            {% set periods = [
+                                "14:00 - 14:55",
+                                "15:00 - 15:55",
+                                "16:00 - 16:55",
+                                "17:00 - 17:55",
+                                "18:00 - 18:55"
+                            ] %}
+                        {% endif %}
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Day / Time</th>
+                                    {% for p in periods %}
+                                        <th>{{ p }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for d in days %}
+                                <tr>
+                                    <th>{{ d }}</th>
+                                    {% for pnum in range(1, periods|length + 1) %}
+                                        {% set slot = routine.slots 
+                                                    | selectattr("day", "equalto", d) 
+                                                    | selectattr("period", "equalto", pnum) 
+                                                    | first %}
+                                        {% if slot %}
+                                            <td>
+                                                <strong>{{ slot.subject.name }}</strong><br>
+                                                <small>
+                                                    {% if slot.teacher %}👨‍🏫 {{ slot.teacher.user.name }}{% endif %}
+                                                </small><br>
+                                                {% if slot.classroom %}
+                                                    <span style="font-size: 12px; color: gray;">
+                                                        🏫 {{ slot.classroom.name }}
+                                                        {% if slot.classroom.is_lab %}
+                                                            (Lab)
+                                                        {% else %}
+                                                            (Theory)
+                                                        {% endif %}
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        {% else %}
+                                            <td></td>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <center><button type="submit" class="select-btn">✅ Confirm Selected Routine</button></center>
+        {% else %}
+            <p style="text-align:center; color:#fff; font-size:18px; margin-top:30px;">
+                ⚠️ No routine options available. Try generating again.
+            </p>
+
+            {% if diagnostics %}
+            <div class="diagnostics">
+                <h3>🔍 Diagnostics</h3>
+                <ul>
+                    {% for key, val in diagnostics.items() %}
+                        <li><strong>{{ key }}:</strong> {{ val }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        {% endif %}
+    </form>
+</body>
+</html>

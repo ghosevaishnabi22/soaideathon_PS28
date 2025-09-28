@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Routine Slot</title>
+    <style>
+       body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* This shorthand property sets the image, position, repeat, and size */
+    background: url("/static/time2.jpg") no-repeat center center;
+    
+    /* This fixes the background image relative to the viewport */
+    background-attachment: fixed;
+    
+    /* This ensures the background covers the entire viewport */
+    background-size: cover;
+    
+    /* Ensures the body takes up at least the full height of the screen */
+    min-height: 100vh; 
+    
+    margin: 0;
+    padding: 40px 20px;
+}
+
+        h1, h2 {
+            color: #001f3f;
+            font-size: 34px;
+            margin-bottom: 30px;
+            text-shadow: 0 5px 15px rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px auto;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 14px;
+            
+        }
+        h2 { text-align: center; color: #093058; }
+        label { font-weight: bold;  font-size: 14px;}
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+             font-size: 14px;
+        }
+        button {
+            background:  #001f3f;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+             font-size: 14px;
+        }
+        button:hover { background: #002955; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>✏️ Edit Period</h2>
+        <form method="POST">
+            <p><b>Day:</b> {{ slot.day }} | <b>Period:</b> {{ slot.period }}</p>
+            <label for="subject_id">Change Subject</label>
+            <select name="subject_id" id="subject_id" required>
+                {% for subj in subjects %}
+                    <option value="{{ subj.id }}" {% if subj.id == slot.subject_id %}selected{% endif %}>
+                        {{ subj.name }}
+                    </option>
+                {% endfor %}
+            </select>
+            <button type="submit">✅ Save</button>
+        </form>
+    </div>
+</body>
+</html>

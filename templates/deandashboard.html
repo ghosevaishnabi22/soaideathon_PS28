@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dean Dashboard</title>
+    <style>
+        body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* This shorthand property sets the image, position, repeat, and size */
+    background: url("/static/time2.jpg") no-repeat center center;
+    
+    /* This fixes the background image relative to the viewport */
+    background-attachment: fixed;
+    
+    /* This ensures the background covers the entire viewport */
+    background-size: cover;
+    
+    /* Ensures the body takes up at least the full height of the screen */
+    min-height: 100vh; 
+    
+    margin: 0;
+    padding: 40px 20px;
+}
+
+        h1, h2 {
+            color: #001f3f;
+            font-size: 34px;
+            margin-bottom: 30px;
+            text-shadow: 0 5px 15px rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+
+        nav a {
+            color: rgb(17, 17, 17);
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 14px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        nav a:hover {
+            color: #fff;
+            background: #001f3f;
+        }
+
+        .flash-message {
+            background-color: #ffe6e6;
+            color: #b30000;
+            padding: 12px 20px;
+            margin: 20px auto;
+            width: 80%;
+            border-left: 5px solid #ff4d4d;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px auto;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+
+        .card h3 {
+            margin-bottom: 16px;
+            color: #007BFF;
+        }
+
+        .classrooms-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* new style → 3 columns */
+            gap: 20px;
+            justify-items: center;
+        }
+
+        .class-card {
+            background-color: #fff;
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+            padding: 24px;
+            box-sizing: border-box;
+            transition: transform 0.2s;
+            text-align: center;
+        }
+
+        .class-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .class-card h3 {
+            color: #007BFF;
+            margin-bottom: 10px;
+        }
+
+        .batch-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .batch {
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: #e9f5ff;
+            color: #0056b3;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .batch a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .batch:hover {
+            background: #394867;
+            color: #F1F6F9;
+        }
+
+        .batch.morning {
+            background: #e6f7ff;
+            border-left: 5px solid #007BFF;
+        }
+        .batch.morning:hover {
+            background: #007BFF;
+            border-left: 5px solid #e6f7ff;
+        }
+
+        .batch.evening {
+            background: #fff8f8;
+            border-left: 5px solid #d63384;
+            color: #d63384;
+        }
+
+        .batch.evening:hover {
+            background: #d63384;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h2>Welcome {{ dean.user.name }}!!</h2>
+
+<!-- Navigation -->
+    <nav>
+        <a href="/deandashboard/{{dean.id}}">Home</a>
+        <a href="/departmentdetails/{{dean.id}}">Department</a>
+        <a href="/showfaculty/{{dean.id}}">Faculty</a>
+        <a href="/routine/{{dean.id}}"> Routines</a>
+        <a href="/message/{{dean.id}}">Notifications</a>
+        <a href="/deansummary/{{ dean.id }}">Summary</a>
+        <a href="/teditprofile/{{dean.id}}">Edit Profile</a>
+        <a href="/logout">Logout</a>
+    </nav>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-message">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Section Summary -->
+    <div class="card">
+        <h3>📊 Section Summary</h3>
+        <p>📌 Total Sections: <b>{{ total_sections }}</b></p>
+        <p>📌 Sections Allocated: <b>{{ allocated_sections }}</b></p>
+    </div>
+
+    <!-- Classroom Cards -->
+    <div class="classrooms-container">
+    {% for classroom in classrooms %}
+        <div class="class-card">
+            <h3>🏫 {{ classroom.name }}</h3>
+            <p>Capacity: <b>{{ classroom.capacity }}</b></p>
+            <p>Department: <b>{{ classroom.department.name }}</b></p>
+            <div class="batch-container">
+                {% set sorted_batches = classroom.batches|sort(attribute="id") %}
+                {% for batch in sorted_batches %}
+                    <div class="batch {% if 'Morning' in batch.name %}morning{% elif 'Evening' in batch.name %}evening{% endif %}">
+                        {% if batch.sections %}
+                            {# ✅ Show only the first section linked to this batch #}
+                            {% set section = batch.sections[0] %}
+                            <a href="/show_routine/{{ section.id }}/{{ batch.id }}">
+                                {% if 'Morning' in batch.name %}🌅 Morning
+                                {% elif 'Evening' in batch.name %}🌙 Evening
+                                {% else %}🎓 Batch{% endif %}
+                                - Section {{ section.name }}
+                            </a>
+                        {% else %}
+                            {# ✅ Only one "No sections allocated" #}
+                            <p style="color: gray; font-size: 0.9em;">No sections allocated</p>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <p style="color:gray;">No batches assigned</p>
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+
+    <!-- Labs Section -->
+    {% if labs %}
+    <h2 style="margin-top:40px; color:#001f3f; text-align:center;">🔬 Laboratories</h2>
+    <div class="classrooms-container">
+        {% for lab in labs %}
+        <div class="class-card">
+            <h3>🔬 {{ lab.name }}</h3>
+            <p>Capacity: <b>{{ lab.capacity }}</b></p>
+            <p>Department: <b>{{ lab.department.name }}</b></p>
+            
+            <div class="batch-container">
+                <!-- ✅ Add "View Routine" button here -->
+                <a href="/show_labroutine/{{ lab.id }}" 
+                style="display:inline-block; margin-top:10px; padding:8px 14px; 
+                        background: #14274E; color:white; border-radius:6px; text-decoration:none;">
+                    📅 View Routine
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</body>
+</html>

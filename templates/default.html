@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AcadBridge Portal</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background: url("static/time2.jpg") no-repeat center center/cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Poppins', sans-serif;
+        }
+        .container {
+            
+            background: rgba(255, 255, 255, 0.15);
+            padding: 60px 50px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(127, 150, 179, 0.15);
+            width: 500px;
+            min-height: 50px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+        }
+        h2 {
+            color: #fff;
+            font-size: 34px;
+            margin-bottom: 30px;
+            text-shadow: 0 5px 5px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        a {
+            display: block;
+            margin: 15px 0;
+            padding: 14px 25px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+            .flash-message {
+            background-color: #ffe6e6;
+            color: #b30000;
+            padding: 12px 20px;
+            margin: 20px auto;
+            width: 80%;
+            border-left: 5px solid #ff4d4d;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .admin-btn { background: #14274E; }
+        .teacher-btn { background: #394867; }
+        .user-btn { background: #9BA4B4; }
+        a:hover { transform: translateY(-4px) scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2><b></b>AcadBridge </b></h2>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-message">
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <a href="/tlogin" class="admin-btn">👨‍💻 Admin Login</a>
+        <a href="/tlogin" class="teacher-btn">👩‍🏫 Teacher Login</a>
+        <a href="/slogin" class="user-btn">🎓 Student Login</a>
+    </div>
+</body>
+</html>
