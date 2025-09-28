@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>View Routine</title>
+    <style>
+        body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* This shorthand property sets the image, position, repeat, and size */
+    background: url("/static/time2.jpg") no-repeat center center;
+    
+    /* This fixes the background image relative to the viewport */
+    background-attachment: fixed;
+    
+    /* This ensures the background covers the entire viewport */
+    background-size: cover;
+    
+    /* Ensures the body takes up at least the full height of the screen */
+    min-height: 100vh; 
+    
+    margin: 0;
+    padding: 40px 20px;
+        }
+
+        h1, h2 {
+            color: #001f3f;
+            font-size: 34px;
+            margin-bottom: 30px;
+            text-shadow: 0 5px 15px rgba(255, 255, 255, 0.5);
+            text-align: center;
+        }
+
+
+        .flash-message {
+            background-color: #ffe6e6;
+            color: #be0606;
+            padding: 12px 20px;
+            margin: 20px auto;
+            width: 80%;
+            border-left: 5px solid #e93b3b;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .generate-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 18px;
+            background: #13991c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 40px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #001f3f;
+            color: white;
+        }
+
+        .subject-cell {
+            background: #e9f5ff;
+            color: #001f3f;
+            font-weight: bold;
+        }
+
+        .free-slot {
+            background: gold;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .teacher-name {
+            font-size: 0.9em;
+            color: #555;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h2>Routine Overview</h2>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="flash-message">
+                {% for message in messages %}
+                    <p>{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <button class="generate-btn">Generate/Update Routine</button>
+    </form>
+
+    {% set sections = routines | groupby('section_id') %}
+    {% for section_id, section_routines in sections %}
+        {% set section = section_routines[0].section %}
+        <h3>Section: {{ section.name }} (Department: {{ section.department.name }})</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Day / Time</th>
+                    {% for time_slot in ['8:00-9:00','9:00-10:00','10:00-11:00','11:00-12:00','12:00-1:00',
+                                         '2:00-3:00','3:00-4:00','4:00-5:00','5:00-6:00','6:00-7:00'] %}
+                        <th>{{ time_slot }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for day in ['Monday','Tuesday','Wednesday','Thursday','Friday'] %}
+                    <tr>
+                        <td>{{ day }}</td>
+                        {% for time_slot in ['8:00-9:00','9:00-10:00','10:00-11:00','11:00-12:00','12:00-1:00',
+                                             '2:00-3:00','3:00-4:00','4:00-5:00','5:00-6:00','6:00-7:00'] %}
+                            {% set routine = section_routines | selectattr('day','equalto',day) 
+                                               | selectattr('time_slot','equalto',time_slot) | list | first %}
+                            {% if routine %}
+                                <td class="subject-cell">
+                                    {{ routine.subject.name }}
+                                    <span class="teacher-name">{{ routine.teacher.name }}</span>
+                                    <span class="teacher-name">Classroom: {{ routine.classroom.name }}</span>
+                                </td>
+                            {% else %}
+                                <td class="free-slot">FREE</td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+</body>
+</html>
