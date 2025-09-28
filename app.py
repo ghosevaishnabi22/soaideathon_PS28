@@ -369,7 +369,7 @@ def sforgotpassword():
             flash("❌ Student not found.")
             return redirect('/sforgotpassword')
 
-        if student.phone != phone:
+        if student.user.phone != phone:
             flash("⚠️ Phone number doesn't match our records.")
             return redirect('/sforgotpassword')
 
@@ -1131,7 +1131,8 @@ def edit_routine_slot(slot_id):
         .first()
     )
 
-    subjects = Subject.query.filter_by(department_id=section.department_id).all()
+    subjects = Subject.query.all()
+    extra_subjects=ExtraSubject.query.all()
 
     if request.method == "GET":
         return render_template(
@@ -1139,7 +1140,8 @@ def edit_routine_slot(slot_id):
             dean=dean,
             section=section,
             slot=slot,
-            subjects=subjects
+            subjects=subjects,
+            extra_subjects=extra_subjects
         )
 
     if request.method == "POST":

@@ -17,9 +17,8 @@ ADMIN/DEAN:
 - Can view rearrangement messages when teachers apply for leave.
 - Can view a Summary Dashboard showing 4 analytical charts:
   - Chart 1: Faculty Load Distribution
-  - Chart 2: Routine Utilization
-  - Chart 3: Subject Allocation Summary
-  - Chart 4: Faculty by Department
+  - Chart 2: Subject Allocation Summary
+  - Chart 3: Faculty by Department
 
 TEACHER:
 ========
@@ -61,7 +60,7 @@ How to Run:
 
 3. Activate Environment:
    - On Windows:
-     ANY_NAME_OF_VIRTUAL_ENVIRONMENT\Scripts\activate
+     . ANY_NAME_OF_VIRTUAL_ENVIRONMENT\Scripts\activate
    - On Mac/Linux:
      source ANY_NAME_OF_VIRTUAL_ENVIRONMENT/bin/activate
 
